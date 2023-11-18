@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+
+  api:
+    container_name: async_api_backend
+    build: .
+    volumes:
+      - $PWD/.env:/opt/app/.env
+    restart: always
+
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+    restart: always

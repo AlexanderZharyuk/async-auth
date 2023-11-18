@@ -1,0 +1,9 @@
+.git
+.cache
+.log
+__init__.py
+*/*/__pycache__*
+*/*/.idea*
+pyproject.toml
+swagger_spec.yaml
+Makefile
