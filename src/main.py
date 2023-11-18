@@ -3,9 +3,11 @@ import logging
 import uvicorn
 from fastapi import APIRouter, FastAPI
 from fastapi.responses import ORJSONResponse
+from sqlalchemy.ext.asyncio import create_async_engine
 
 import src.constants as const
 from src.core.config import LOGGING, settings
+from src.db import postgres
 from src.models import BaseExceptionBody
 from src.v1.auth.routers import router as auth_router
 from src.v1.healthcheck.routers import router as healthcheck_router
@@ -39,12 +41,14 @@ app.include_router(v1_router)
 
 @app.on_event("startup")
 async def startup():
-    ...
+    postgres.pg = postgres.PostgresStorage(
+        engine=create_async_engine(settings.pg_dsn, echo=True, future=True)
+    )
 
 
 @app.on_event("shutdown")
 async def shutdown():
-    ...
+    await postgres.pg.close()
 
 
 if __name__ == "__main__":

@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import TypeVar
 
-from pydantic import UUID4
-
 T = TypeVar("T")
 
 
@@ -14,9 +12,11 @@ class BaseStorage(ABC):
         self.client = client
 
     @abstractmethod
-    async def get(self, obj_id: UUID4 | str | int | None, **kwargs) -> dict:
+    async def close(self) -> None:
         raise NotImplementedError
 
+
+class DBStorage(BaseStorage):
     @abstractmethod
-    async def close(self) -> None:
+    async def get_session(self):
         raise NotImplementedError
