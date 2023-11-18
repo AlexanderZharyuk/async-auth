@@ -6,7 +6,7 @@ from fastapi.responses import ORJSONResponse
 
 import src.constants as const
 from src.core.config import LOGGING, settings
-from src.models import BaseExceptionBody
+from src.schemas import BaseExceptionBody
 from src.v1.auth.routers import router as auth_router
 from src.v1.healthcheck.routers import router as healthcheck_router
 from src.v1.roles.routers import router as roles_router

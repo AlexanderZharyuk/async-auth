@@ -6,3 +6,5 @@ uvicorn==0.23.2
 gunicorn==21.2.0
 orjson==3.9.9
 python-dotenv==1.0.0
+alembic==1.12.1
+psycopg[binary]==3.1.13

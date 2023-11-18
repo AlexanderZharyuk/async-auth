@@ -1,13 +1,17 @@
-import logging
+from sqlalchemy import MetaData
+from sqlalchemy.orm import DeclarativeBase
 
-from pydantic import BaseModel
+POSTGRES_INDEXES_NAMING_CONVENTION = {
+    "ix": "%(column_0_label)s_idx",
+    "uq": "%(table_name)s_%(column_0_name)s_key",
+    "ck": "%(table_name)s_%(constraint_name)s_check",
+    "fk": "%(table_name)s_%(column_0_name)s_fkey",
+    "pk": "%(table_name)s_pkey",
+}
+metadata_ = MetaData(naming_convention=POSTGRES_INDEXES_NAMING_CONVENTION)
 
-logger = logging.getLogger(__name__)
 
+class Base(DeclarativeBase):
+    """Base class used for declarative class definitions."""
 
-class BaseResponseBody(BaseModel):
-    data: dict | list
-
-
-class BaseExceptionBody(BaseModel):
-    detail: dict | None = None
+    metadata = metadata_
