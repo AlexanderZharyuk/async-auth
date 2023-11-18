@@ -1,7 +1,7 @@
 [project]
 name = "Async Auth API"
 version = "1.0.0"
-description = "BestMovies API"
+description = "Async Auth API"
 requires-python = ">=3.10"
 
 

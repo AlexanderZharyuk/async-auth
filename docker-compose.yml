@@ -3,7 +3,7 @@ version: '3'
 services:
 
   api:
-    container_name: async_api_backend
+    container_name: async_auth_backend
     build: .
     volumes:
       - $PWD/.env:/opt/app/.env
