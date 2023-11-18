@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import TypeVar
+from sqlalchemy.ext.asyncio import AsyncSession
 
 T = TypeVar("T")
 
@@ -18,5 +19,5 @@ class BaseStorage(ABC):
 
 class DBStorage(BaseStorage):
     @abstractmethod
-    async def get_session(self):
+    async def get_session(self) -> AsyncSession:
         raise NotImplementedError
