@@ -2,6 +2,7 @@ from functools import lru_cache
 from logging import config as logging_config
 
 from pydantic_settings import BaseSettings
+from functools import cached_property
 
 import src.constants as const
 from src.core.logger import LOGGING
@@ -21,7 +22,12 @@ class Settings(BaseSettings):
     postgres_db: str = "auth_db"
     postgres_user: str = "app"
     postgres_pwd: str = "123qwe"
-    pg_dsn: str = f"postgresql+asyncpg://{postgres_user}:{postgres_pwd}@{postgres_host}:{postgres_port}/{postgres_db}"
+    
+    @cached_property
+    def get_pg_dsn(self):
+        return (f"postgresql+asyncpg://{self.postgres_user}:"
+                f"{self.postgres_pwd}@{self.postgres_host}:"
+                f"{self.postgres_port}/{self.postgres_db}")
 
     class Config:
         case_sensitive = False
