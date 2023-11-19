@@ -17,7 +17,7 @@ class BaseStorage(ABC):
         raise NotImplementedError
 
 
-class DBStorage(BaseStorage):
-    @abstractmethod
+class Database(BaseStorage):
+    """@abstractmethod
     async def get_session(self) -> AsyncSession:
-        raise NotImplementedError
+        raise NotImplementedError"""
