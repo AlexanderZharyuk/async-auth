@@ -1,9 +1,14 @@
 import logging
 
 from pydantic import BaseModel
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 
 logger = logging.getLogger(__name__)
+
+
+# Базовый класс для моделей
+class Base(DeclarativeBase):
+    pass
 
 
 class BaseResponseBody(BaseModel):
@@ -13,6 +18,3 @@ class BaseResponseBody(BaseModel):
 class BaseExceptionBody(BaseModel):
     detail: dict | None = None
 
-
-# Базовый класс для моделей
-Base = declarative_base()
