@@ -14,7 +14,7 @@ class User(Base, TimeStampedMixin):
     id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, nullable=False, default=uuid.uuid4
     )
-    username: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
+    username: Mapped[str] = mapped_column(String(100), nullable=False)
     full_name: Mapped[Optional[str]] = mapped_column(String(512), default=None, nullable=True)
     email: Mapped[str] = mapped_column(String(100), nullable=False)
     password: Mapped[str] = mapped_column(String(), nullable=False)
