@@ -17,6 +17,7 @@ metadata_ = MetaData(naming_convention=POSTGRES_INDEXES_NAMING_CONVENTION)
 
 class Base(DeclarativeBase):
     """Базовый класс для моделей"""
+
     metadata = metadata_
 
 
@@ -26,4 +27,3 @@ class BaseResponseBody(BaseModel):
 
 class BaseExceptionBody(BaseModel):
     detail: dict | None = None
-
