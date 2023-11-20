@@ -1,10 +1,13 @@
-from fastapi import APIRouter
+from typing import Union
 
-router = APIRouter(prefix="/roles", tags=["Roles"])
+from fastapi import APIRouter, Depends, Path, Query, status
+from typing_extensions import Annotated
+
+router = APIRouter(prefix="/roles", tags=["Управление ролями"])
 
 
 @router.get("/", summary="Получить все роли")
-async def mock_route() -> None:
+async def get_roles() -> None:
     """
     Mock route.
     """
