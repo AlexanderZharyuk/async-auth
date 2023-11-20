@@ -1,4 +1,4 @@
-pydantic==2.4.2
+pydantic==2.5.1
 pydantic-settings==2.0.3
 redis==5.0.1
 fastapi==0.103.2
@@ -7,4 +7,4 @@ gunicorn==21.2.0
 orjson==3.9.9
 python-dotenv==1.0.0
 alembic==1.12.1
-psycopg[binary]==3.1.13
+greenlet==3.0.1

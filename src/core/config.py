@@ -1,4 +1,4 @@
-from functools import lru_cache
+from functools import lru_cache, cached_property
 from logging import config as logging_config
 
 from pydantic_settings import BaseSettings
@@ -16,11 +16,17 @@ class Settings(BaseSettings):
     redis_host: str = "redis"
     redis_port: int = 6379
     redis_db: int = 0
-    db_host: str = "db"
-    db_port: int = 5432
-    db_user: str = "postgres"
-    db_password: str = "postgres"
-    db_name: str = "auth_db"
+    postgres_host: str = "db"
+    postgres_port: int = 5432
+    postgres_db: str = "auth_db"
+    postgres_user: str = "app"
+    postgres_pwd: str = "123qwe"
+
+    @cached_property
+    def get_pg_dsn(self):
+        return (f"postgresql+asyncpg://{self.postgres_user}:"
+                f"{self.postgres_pwd}@{self.postgres_host}:"
+                f"{self.postgres_port}/{self.postgres_db}")
 
     class Config:
         case_sensitive = False
