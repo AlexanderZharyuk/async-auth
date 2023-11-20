@@ -11,13 +11,7 @@ from alembic import context
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-section = config.config_ini_section
-config.set_section_option(section, "PG_DSN", settings.get_pg_dsn)
-config.set_section_option(section, "DB_USER", settings.postgres_user)
-config.set_section_option(section, "DB_PASS", settings.postgres_pwd)
-config.set_section_option(section, "DB_NAME", settings.postgres_db)
-config.set_section_option(section, "DB_HOST", settings.postgres_host)
-config.set_section_option(section, "DB_PORT", str(settings.postgres_port))
+config.set_main_option("sqlalchemy.url", settings.pg_dsn)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
