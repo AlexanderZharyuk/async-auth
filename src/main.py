@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 import src.constants as const
 from src.core.config import LOGGING, settings
 from src.db import postgres
-from src.models import BaseExceptionBody
+from src.schemas import BaseExceptionBody
 from src.v1.auth.routers import router as auth_router
 from src.v1.healthcheck.routers import router as healthcheck_router
 from src.v1.roles.routers import router as roles_router
@@ -42,7 +42,7 @@ app.include_router(v1_router)
 @app.on_event("startup")
 async def startup():
     postgres.pg = postgres.PostgresDatabase(
-        engine=create_async_engine(settings.get_pg_dsn, echo=True, future=True)
+        engine=create_async_engine(settings.pg_dsn, echo=True, future=True)
     )
 
 
