@@ -1,7 +1,8 @@
-from functools import lru_cache, cached_property
+from functools import lru_cache
 from logging import config as logging_config
 
 from pydantic_settings import BaseSettings
+from functools import cached_property
 
 import src.constants as const
 from src.core.logger import LOGGING
