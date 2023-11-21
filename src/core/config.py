@@ -1,4 +1,4 @@
-from functools import cached_property, lru_cache
+from functools import lru_cache, cached_property
 from logging import config as logging_config
 
 from pydantic_settings import BaseSettings
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     postgres_pwd: str = "123qwe"
 
     @cached_property
-    def get_pg_dsn(self):
+    def pg_dsn(self):
         return (
             f"postgresql+asyncpg://{self.postgres_user}:"
             f"{self.postgres_pwd}@{self.postgres_host}:"

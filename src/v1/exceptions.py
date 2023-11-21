@@ -2,7 +2,7 @@ from http import HTTPStatus
 
 from fastapi.exceptions import HTTPException
 
-from src.models import BaseExceptionBody
+from src.schemas import BaseExceptionBody
 
 
 class ServiceError(HTTPException):
