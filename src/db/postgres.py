@@ -1,5 +1,7 @@
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from typing import AsyncGenerator
+
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from src.db.storages import Database
 
@@ -12,8 +14,10 @@ class PostgresDatabase(Database):
     def __init__(self, engine: AsyncEngine) -> None:
         super().__init__(client=engine)
 
-    async def __call__(self) -> AsyncSession:
-        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async def __call__(self) -> AsyncGenerator[AsyncSession, None]:
+        async_session = async_sessionmaker(
+            self.client, class_=AsyncSession, expire_on_commit=False
+        )
         async with async_session() as session:
             try:
                 yield session
