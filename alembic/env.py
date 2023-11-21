@@ -5,6 +5,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from src.core.config import settings
+from src.models import Base
 from src.v1.users.models import User
 from src.v1.roles.models import Role, RolesToUsers
 from alembic import context
@@ -24,11 +25,12 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 # target_metadata = None
-target_metadata = [
+"""target_metadata = [
     User.metadata,
     Role.metadata,
     RolesToUsers.metadata,
-]
+]"""
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env2.py,
 # can be acquired:
