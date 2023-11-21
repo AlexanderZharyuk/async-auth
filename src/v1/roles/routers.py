@@ -13,10 +13,7 @@ from src.db.postgres import PostgresDatabase, get_postgres_storage
 
 router = APIRouter(prefix="/roles", tags=["Управление ролями"])
 
-db = Depends(get_postgres_storage)
-db_session = db
-DatabaseSession = Annotated[AsyncSession, Depends(db_session)]
 @router.get("/", summary="Получить все роли")
-async def get_roles(ses: DatabaseSession) -> None:
-    print(ses)
+async def get_roles(service: PostgreRolesService = Depends(get_role_service)) -> None:
+    r = await service.get()
     return None

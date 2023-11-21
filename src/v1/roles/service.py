@@ -4,7 +4,7 @@ from functools import lru_cache
 from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing_extensions import Annotated
+from typing import Annotated, AsyncGenerator, Any
 
 from src.db import postgres
 from src.db.postgres import PostgresDatabase, get_postgres_storage
@@ -18,18 +18,20 @@ class BaseRolesService(ABC):
 class PostgreRolesService(BaseRolesService):
     """Role service depends on PostgreSQL"""
 
-    def __init__(self, session: AsyncSession) -> None:
-        db_session = session()
-        self.session = Annotated[AsyncSession, Depends(db_session)]
+    def __init__(self, db: AsyncGenerator[AsyncSession, Any]) -> None:
+        #db_session = db.get_session()
+        self.session = Annotated[AsyncSession, Depends(db)]
+
 
     async def get(self):
-        stmt = select(Role)
-        data = await self.session.aclose()
-        return data
+        data = await self.session.execute(select(Role))
+        """stmt = select(Role)
+        data = await self.session.execute(stmt)"""
+        return None
 
 
 @lru_cache()
 def get_role_service(
-    session: PostgresDatabase = Depends(get_postgres_storage),
+    db: Annotated[PostgresDatabase, Depends(get_postgres_storage)],
 ) -> PostgreRolesService:
-    return PostgreRolesService(session)
+    return PostgreRolesService(db())
