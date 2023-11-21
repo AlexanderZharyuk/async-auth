@@ -15,8 +15,6 @@ class Role(Base, TimeStampedMixin):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
 
-    users: Mapped[List["RolesToUsers"]] = relationship(back_populates="roles")
-
     def __repr__(self) -> str:
         return f"Role(id={self.id!r}, name={self.name!r})"
 
@@ -28,5 +26,3 @@ class RolesToUsers(Base):
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), primary_key=True)
-    users: Mapped["User"] = relationship(back_populates="roles")
-    roles: Mapped["Role"] = relationship(back_populates="users")

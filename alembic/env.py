@@ -6,6 +6,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from src.core.config import settings
 from src.v1.users.models import User
+from src.v1.roles.models import Role, RolesToUsers
 from alembic import context
 
 # this is the Alembic Config object, which provides
@@ -25,6 +26,8 @@ if config.config_file_name is not None:
 # target_metadata = None
 target_metadata = [
     User.metadata,
+    Role.metadata,
+    RolesToUsers.metadata,
 ]
 
 # other values from the config, defined by the needs of env2.py,
