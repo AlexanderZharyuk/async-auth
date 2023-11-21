@@ -18,18 +18,18 @@ class BaseRolesService(ABC):
 class PostgreRolesService(BaseRolesService):
     """Role service depends on PostgreSQL"""
 
-    session: AsyncSession
-
     def __init__(self, session: AsyncSession) -> None:
-        self.session = session
+        db_session = session()
+        self.session = Annotated[AsyncSession, Depends(db_session)]
 
     async def get(self):
-        data = await self.session.execute(select(Role))
+        stmt = select(Role)
+        data = await self.session.aclose()
         return data
 
 
 @lru_cache()
 def get_role_service(
-    session: AsyncSession,
+    session: PostgresDatabase = Depends(get_postgres_storage),
 ) -> PostgreRolesService:
     return PostgreRolesService(session)
