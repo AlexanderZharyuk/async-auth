@@ -24,7 +24,7 @@ class User(Base, TimeStampedMixin):
         DateTime(timezone=True), default=None, nullable=True
     )
 
-    #roles: Mapped[List[RolesToUsers]] = relationship(back_populates="users")
+    roles: Mapped[List[RolesToUsers]] = relationship(back_populates="users")
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, login={self.username!r}, name={self.full_name!r}, email={self.email!r})"

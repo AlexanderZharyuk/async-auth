@@ -1,8 +1,8 @@
 """Roles table migration
 
-Revision ID: 574a1399ff4f
+Revision ID: 6691ba82635c
 Revises: 
-Create Date: 2023-11-21 14:06:01.116973
+Create Date: 2023-11-21 14:18:57.295535
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "574a1399ff4f"
+revision: str = "6691ba82635c"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
