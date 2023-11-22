@@ -1,6 +1,3 @@
-from datetime import datetime
-from typing import List
-
 from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,7 +10,7 @@ class Role(Base, TimeStampedMixin):
     __tablename__ = "roles"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, nullable=False)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
 
     def __repr__(self) -> str:
         return f"Role(id={self.id!r}, name={self.name!r})"

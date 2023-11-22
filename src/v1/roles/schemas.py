@@ -1,19 +1,33 @@
-from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
-from src.models import BaseResponseBody
+from src.schemas import BaseResponseBody
 
 
-class Role(BaseModel):
-    id: int | None = Field(..., examples=["127856"])
+class RoleBase(BaseModel):
+    id: int = Field(..., examples=["127856"])
     name: str = Field(
         ..., examples=["Администратор системы."]
     )
-    created_at: datetime | None = Field(..., examples=[datetime.now()])
 
     class Config:
-        populate_by_name = True
+        from_attributes = True
+
+
+class RoleCreate(BaseModel):
+    name: str = Field(
+        ..., examples=["Администратор системы."]
+    )
+
+
+class RoleModify(BaseModel):
+    name_column: str = Field(
+        ..., examples=["name"]
+    )
+    value: str = Field(..., examples=["Moderator"])
+
+class SingleRolesResponse(BaseResponseBody):
+    data: RoleBase | dict
 
 
 class SeveralRolesResponse(BaseResponseBody):
-    data: list[Role]
+    data: list[RoleBase]
