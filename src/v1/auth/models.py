@@ -13,4 +13,4 @@ class UsersSignatures(Base, TimeStampedMixin):
     user: Mapped[User] = relationship("User", back_populates="signature")
 
     def __repr__(self) -> str:
-        return f"UserSignature(User: {self.user}, Token: {self.token})"
+        return f"UserSignature(User: {self.user}, Signature: {self.signature})"
