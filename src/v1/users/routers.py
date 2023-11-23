@@ -1,12 +1,17 @@
 import logging
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Path, status
+from fastapi import APIRouter, Path, Query, status
 from pydantic import UUID4
 from typing_extensions import Annotated
 
-from src.v1.users.schemas import SingleUserResponse, SeveralLoginsResponse, UserChange
-from src.v1.users.service import PostgresUserService, get_user_service
+from src.db.postgres import DatabaseSession
+from src.v1.users.schemas import (
+    SingleUserResponse,
+    SeveralLoginsResponse,
+    UserChange,
+)
+from src.v1.users.service import UserService
 
 router = APIRouter(prefix="/users", tags=["Пользователи"])
 logger = logging.getLogger(__name__)
@@ -20,13 +25,13 @@ logger = logging.getLogger(__name__)
     description="Получение информации о пользователе.",
 )
 async def get_user(
+    db_session: DatabaseSession,
     id: Annotated[UUID4, Path(example=uuid4())],
-    user_service: PostgresUserService = Depends(get_user_service),
 ) -> SingleUserResponse:
     """
-    Получение информации по конкретному жанру.
+    Получение информации о конкретном пользователе.
     """
-    user = await user_service.get_user(obj_id=id)
+    user = await UserService.get(db_session=db_session, obj_id=id)
     return SingleUserResponse(data=user)
 
 
@@ -45,14 +50,16 @@ async def get_user(
     description="Изменение информации о пользователе.",
 )
 async def change_user(
+    db_session: DatabaseSession,
     id: Annotated[UUID4, Path(example=uuid4())],
-    data: UserChange,
-    user_service: PostgresUserService = Depends(get_user_service),
+    user_change_data: UserChange,
 ) -> SingleUserResponse:
     """
     Изменение информации о пользователе.
     """
-    user = await user_service.change_user(obj_id=id, data=data.model_dump())
+    user = await UserService.change(
+        db_session=db_session, obj_id=id, data_to_change_user=user_change_data
+    )
     return SingleUserResponse(data=user)
 
 
@@ -64,21 +71,15 @@ async def change_user(
     description="Получение списка последних логинов пользователя.",
 )
 async def get_user_login_history(
-    # page_number: Annotated[
-    #     Union[int, None], Query(description="Page number of results", ge=1)
-    # ] = 1,
-    # page_size: Annotated[
-    #     Union[int, None],
-    #     Query(
-    #         description=f"Limit the number of results [Max size: {settings.api_max_page_size}]",
-    #         ge=1,
-    #         le=settings.api_max_page_size,
-    #     ),
-    # ] = 50,
-    user_service: PostgresUserService = Depends(get_user_service),
+    db_session: DatabaseSession,
+    id: Annotated[UUID4, Path(example=uuid4())],
+    page: Annotated[int, Query(example=1)],
+    per_page: Annotated[int, Query(example=10)],
 ) -> SeveralLoginsResponse:
     """
     Получение списка последних логинов пользователя.
     """
-    logins = await user_service.get_user_login_history(obj_id=id)
+    logins = await UserService.get_user_login_history(
+        db_session=db_session, obj_id=id, page=page, per_page=per_page
+    )
     return SeveralLoginsResponse(data=logins)

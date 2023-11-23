@@ -1,7 +1,8 @@
 import uuid
-from typing import Optional
 from datetime import datetime
-from pydantic import UUID4, BaseModel, Field, model_validator
+from typing import Optional
+
+from pydantic import UUID4, BaseModel, Field, EmailStr, IPvAnyAddress, model_validator
 
 from src.schemas import BaseResponseBody
 
@@ -9,7 +10,7 @@ from src.schemas import BaseResponseBody
 class UserBase(BaseModel):
     id: UUID4 = Field(..., examples=[uuid.uuid4()])
     full_name: str | None = Field(..., examples=["George Lucas"])
-    email: str = Field(..., examples=["j7cZQ@example.com"])
+    email: EmailStr = Field(..., examples=["j7cZQ@example.com"])
     username: str = Field(..., examples=["george799"])
     created_at: datetime = Field(..., examples=["2032-04-23T10:20:30.400+02:30"])
     updated_at: datetime | None = Field(..., examples=["2032-04-23T10:20:30.400+02:30"])
@@ -20,24 +21,27 @@ class UserBase(BaseModel):
 
 
 class UserChange(BaseModel):
-    full_name: Optional[str] = Field(examples=["George Lucas"])
-    email: Optional[str] = Field(examples=["j7cZQ@example.com"])
-    username: Optional[str] = Field(examples=["george799"])
-    password: Optional[str] = Field(examples=["12345678"])
-    new_password: Optional[str] = Field(examples=["12345678"])
+    full_name: Optional[str] = Field(default=None, examples=["George Lucas"])
+    email: Optional[EmailStr] = Field(default=None, examples=["j7cZQ@example.com"])
+    username: Optional[str] = Field(default=None, examples=["george799"])
+    old_password: Optional[str] = Field(default=None, examples=["12345678"])
+    password: Optional[str] = Field(default=None, examples=["12345678"])
+    repeat_password: Optional[str] = Field(default=None, examples=["12345678"])
 
-    @model_validator(mode="before")
-    def validate_params(self, data):
-        if not data:
-            raise ValueError("You should provide at least one parameter")
-        if data.get("new_password") and not data.get("password"):
-            raise ValueError("You should provide the old password for changing password")
+    @model_validator(mode="after")
+    def validate_params(self) -> "UserChange":
+        if self.password:
+            if not self.old_password:
+                raise ValueError("You should provide your previous password for changing password")
+            if self.password != self.repeat_password:
+                raise ValueError("Passwords do not match")
+        return self
 
 
 class UserLogin(BaseModel):
     user_id: UUID4 = Field(..., examples=[uuid.uuid4()])
     date: str = Field(..., examples=["2022-01-01T00:00:00+00:00"])
-    ip: str = Field(..., examples=["127.0.0.1"])
+    ip: IPvAnyAddress = Field(..., examples=["1.0.0.1"])
     user_agent: str = Field(
         ...,
         examples=[
