@@ -9,7 +9,7 @@ class RolesNotFound(HTTPException):
     """Возвращаемая модель при ошибках сервиса."""
 
     def __init__(
-        self, status_code: int = HTTPStatus.NOT_FOUND, message: str = "Objects doesn't exists"
+        self, status_code: int = HTTPStatus.NOT_FOUND, message: str = "Roles doesn't exists"
     ) -> None:
         detail = BaseExceptionBody(detail={"code": 5001, "message": message})
         super().__init__(status_code=status_code, detail=detail.model_dump())
