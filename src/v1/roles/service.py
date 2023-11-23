@@ -76,7 +76,7 @@ class PostgreRolesService(BaseRolesService):
 
     async def modify_role(self, session: AsyncSession, obj_id: int, data: Mapping) -> RoleBase:
         params = RoleModify(**data)
-        await self.get_role(session, obj_id)
+        await self.get_role(session=session, obj_id=obj_id)
 
         if hasattr(Role, params.name_column):
             statement = (
@@ -101,7 +101,7 @@ class PostgreRolesService(BaseRolesService):
             raise ServiceError
 
     async def delete_role(self, session: AsyncSession, obj_id: int) -> RoleBase:
-        role = await self.get_role(session, obj_id)
+        role = await self.get_role(session=session, obj_id=obj_id)
 
         try:
             statement = delete(Role).where(Role.id == obj_id).returning(Role)
