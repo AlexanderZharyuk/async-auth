@@ -22,7 +22,7 @@ class User(Base, TimeStampedMixin):
     last_login: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=None, nullable=True
     )
-    signature: Mapped[str] = relationship("UsersSignatures", uselist=False, back_populates="user")
+    #signature: Mapped[str] = relationship("UsersSignatures", uselist=False, back_populates="user")
 
     # ToDo: Relationships: MtM table for roles (echeck cascade)
     # roles: Mapped[List[RolesToUsers]] = relationship(back_populates="users")
