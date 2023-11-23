@@ -1,10 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime
-from sqlalchemy import MetaData
-from sqlalchemy import func
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, MetaData, func
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 POSTGRES_INDEXES_NAMING_CONVENTION = {
     "ix": "%(column_0_label)s_idx",
@@ -24,8 +21,18 @@ class Base(DeclarativeBase):
 
 class TimeStampedMixin(object):
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False,
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
+<<<<<<< HEAD
         DateTime(timezone=True), onupdate=func.now(), default=None, nullable=True,
     )
+=======
+        DateTime(timezone=True),
+        onupdate=func.now(),
+        default=None,
+        nullable=True,
+    )
+>>>>>>> master
