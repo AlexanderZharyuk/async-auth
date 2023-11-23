@@ -1,3 +1,5 @@
+import uuid
+
 from abc import ABC, abstractmethod
 
 from sqlalchemy import or_, select
@@ -18,7 +20,6 @@ class BaseAuthService(ABC):
     @staticmethod
     async def signup(db_session: AsyncSession, user: UserCreate) -> User:
         # FIXME(alexander.zharyuk): Refactor this code (get user from user service method)
-        # TODO: Use db transactions
         statement = select(users_models.User).filter(
             or_(users_models.User.email == user.email, users_models.User.username == user.username)
         )
@@ -27,20 +28,15 @@ class BaseAuthService(ABC):
             raise UserAlreadyExistsError()
 
         user = users_models.User(
+                id=uuid.uuid4(),
                 **user.model_dump(exclude={"password", "repeat_password", "id"}),
                 password=hash_password(user.password),
         )
-        db_session.add(user)
-        try:
-            await db_session.commit()
-        except SQLAlchemyError:
-            await db_session.rollback()
-            raise ServiceError()
-        await db_session.refresh(user)
-
         user_signature = auth_models.UsersSignatures(
             signature=await generate_user_signature(user.username), user_id=user.id
         )
+
+        db_session.add(user)
         db_session.add(user_signature)
         try:
             await db_session.commit()
