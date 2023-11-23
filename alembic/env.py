@@ -8,6 +8,7 @@ from src.core.config import settings
 from src.models import Base
 from src.v1.users.models import User
 from src.v1.auth.models import UsersSignatures
+from src.v1.roles.models import Role, RolesToUsers
 from alembic import context
 
 # this is the Alembic Config object, which provides
