@@ -10,10 +10,10 @@ router = APIRouter(prefix="/roles", tags=["Управление ролями"])
 
 @router.get(
     "/",
-    summary="Получение списка существующих ролей.",
+    summary="Получить список существующих ролей.",
     response_model=SeveralRolesResponse,
     status_code=status.HTTP_200_OK,
-    description="Получение списка существующих ролей.",
+    description="Получить список существующих ролей.",
 )
 async def get_roles(db_session: DatabaseSession) -> SeveralRolesResponse:
     roles = await RoleService.get_roles(session=db_session)
@@ -22,10 +22,10 @@ async def get_roles(db_session: DatabaseSession) -> SeveralRolesResponse:
 
 @router.post(
     "/",
-    summary="Создание новой роли.",
+    summary="Создать новую роль.",
     response_model=SingleRolesResponse,
     status_code=status.HTTP_200_OK,
-    description="Создание новой роли.",
+    description="Создать новую роль.",
 )
 async def create_role(role: RoleCreate, db_session: DatabaseSession) -> SingleRolesResponse:
     role = await RoleService.create_role(session=db_session, data=role.model_dump())
@@ -34,10 +34,10 @@ async def create_role(role: RoleCreate, db_session: DatabaseSession) -> SingleRo
 
 @router.patch(
     "/{role_id}",
-    summary="Редактирование роли.",
+    summary="Редактировать роль.",
     response_model=SingleRolesResponse,
     status_code=status.HTTP_200_OK,
-    description="Редактирование роли.",
+    description="Редактировать роль.",
 )
 async def modify_role(
     role: RoleModify, role_id: Annotated[int, Path(example=127856)], db_session: DatabaseSession
@@ -50,10 +50,10 @@ async def modify_role(
 
 @router.delete(
     "/{role_id}",
-    summary="Удаление роли.",
+    summary="Удалить роль.",
     response_model=SingleRolesResponse,
     status_code=status.HTTP_200_OK,
-    description="Удаление роли.",
+    description="Удалить роль.",
 )
 async def delete_role(
     role_id: Annotated[int, Path(example=127856)], db_session: DatabaseSession
