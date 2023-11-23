@@ -25,10 +25,7 @@ class PostgresDatabase(Database):
             self.client, class_=AsyncSession, expire_on_commit=False
         )
         async with async_session() as session:
-            try:
-                yield session
-            except:
-                await session.rollback()
+            yield session
 
     async def close(self) -> None:
         await self.engine.dispose()
