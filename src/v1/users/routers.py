@@ -6,8 +6,8 @@ from pydantic import UUID4
 
 from src.db.postgres import DatabaseSession
 from src.v1.users.service import UserRolesService
+from src.v1.users.schemas import SingleUserResponse, RoleUser
 from src.v1.roles.schemas import SeveralRolesResponse
-from src.v1.users.schemas import RoleUser
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -24,18 +24,20 @@ async def get_roles(db_session: DatabaseSession, user_id: Annotated[UUID4, Path(
 
 @router.post(
     "/{user_id}/roles",
+    response_model=SingleUserResponse,
     status_code=status.HTTP_200_OK,
     summary="Назначить роль пользователю.",
     description="Назначить роль пользователю.")
-async def add_role(db_session: DatabaseSession, role: RoleUser, user_id: Annotated[UUID4, Path(example=uuid4())]) -> None:
+async def add_role(db_session: DatabaseSession, role: RoleUser, user_id: Annotated[UUID4, Path(example=uuid4())]) -> SingleUserResponse:
     await UserRolesService.add_role(session=db_session, obj_id=user_id, data=role.model_dump())
-    return None
+    return SingleUserResponse(data={})
 
 @router.delete(
     "/{user_id}/roles",
+    response_model=SingleUserResponse,
     status_code=status.HTTP_200_OK,
     summary="Отозвать роль у пользователя.",
     description="Отозвать роль у пользователя.")
-async def delete_role(db_session: DatabaseSession, role: RoleUser, user_id: Annotated[UUID4, Path(example=uuid4())]) -> None:
+async def delete_role(db_session: DatabaseSession, role: RoleUser, user_id: Annotated[UUID4, Path(example=uuid4())]) -> SingleUserResponse:
     await UserRolesService.delete_role(session=db_session, obj_id=user_id, data=role.model_dump())
-    return None
+    return SingleUserResponse(data=[])
