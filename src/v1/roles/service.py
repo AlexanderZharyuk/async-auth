@@ -28,7 +28,6 @@ class BaseRolesService(ABC):
             raise RoleNotFound
         return result
 
-
     @abstractmethod
     async def get_roles(self, session: AsyncSession) -> List[RoleBase]:
         ...
@@ -109,7 +108,7 @@ class PostgreRolesService(BaseRolesService):
             await session.commit()
             role = query.scalar_one()
             return RoleBase.model_validate(role)
-        except exc.SQLAlchemyError as e:
+        except exc.SQLAlchemyError:
             await session.rollback()
             raise ServiceError
 

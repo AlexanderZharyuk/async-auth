@@ -5,7 +5,6 @@ from fastapi.exceptions import HTTPException
 from src.schemas import BaseExceptionBody
 
 
-#ToDO
 class RolesNotFound(HTTPException):
     """Возвращаемая модель при ошибках сервиса."""
 
@@ -15,7 +14,7 @@ class RolesNotFound(HTTPException):
         detail = BaseExceptionBody(detail={"code": 5003, "message": message})
         super().__init__(status_code=status_code, detail=detail.model_dump())
 
-#ToDO
+
 class RoleAlreadyExistsError(HTTPException):
     """Возвращаемая модель при ошибках сервиса."""
 

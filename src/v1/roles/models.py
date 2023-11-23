@@ -21,5 +21,9 @@ class RolesToUsers(Base):
 
     __tablename__ = "roles_to_users"
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True)
-    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True
+    )
+    role_id: Mapped[int] = mapped_column(
+        ForeignKey("roles.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True
+    )

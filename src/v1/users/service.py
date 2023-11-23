@@ -2,17 +2,17 @@ from abc import ABC
 from typing import List, Mapping
 
 from pydantic import UUID4
-from sqlalchemy import exc, select, delete
+from sqlalchemy import delete, exc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.v1.exceptions import ServiceError
-from src.v1.users.exceptions import UserNotFound
 from src.v1.roles.exceptions import RoleAlreadyExistsError
-from src.v1.users.models import User
-from src.v1.users.schemas import RoleUser
 from src.v1.roles.models import Role, RolesToUsers
 from src.v1.roles.schemas import RoleBase
 from src.v1.roles.service import PostgreRolesService
+from src.v1.users.exceptions import UserNotFound
+from src.v1.users.models import User
+from src.v1.users.schemas import RoleUser
 
 
 class BaseUserService(ABC):
@@ -32,12 +32,17 @@ class BaseUserService(ABC):
 class PostgreUserService(BaseUserService):
     """User service depends on PostgreSQL"""
 
+
 class PostgresUserRolesService(BaseUserService):
     """Managing user roles service depends on PostgreSQL"""
 
     async def get_roles(self, session: AsyncSession, obj_id: UUID4) -> List[RoleBase]:
         await self.get_user(session=session, obj_id=obj_id)
-        statement = select(Role).where(RolesToUsers.user_id == obj_id).where(RolesToUsers.role_id == Role.id)
+        statement = (
+            select(Role)
+            .where(RolesToUsers.user_id == obj_id)
+            .where(RolesToUsers.role_id == Role.id)
+        )
         query = await session.execute(statement)
         result = query.scalars().all()
         roles = [RoleBase.model_validate(role) for role in result]
@@ -66,12 +71,16 @@ class PostgresUserRolesService(BaseUserService):
         await PostgreRolesService.get_role(session, role_id)
 
         try:
-            statement = delete(RolesToUsers).where(RolesToUsers.role_id == role_id).where(RolesToUsers.user_id == obj_id)
-            query = await session.execute(statement)
+            statement = (
+                delete(RolesToUsers)
+                .where(RolesToUsers.role_id == role_id)
+                .where(RolesToUsers.user_id == obj_id)
+            )
+            await session.execute(statement)
             await session.commit()
         except exc.SQLAlchemyError:
             await session.rollback()
             raise ServiceError
 
-UserRolesService = PostgresUserRolesService()
 
+UserRolesService = PostgresUserRolesService()
