@@ -11,9 +11,6 @@ from src.v1.users.schemas import RoleUser
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
-#b9834ac3-a090-49eb-947e-fddecac769f3
-
-
 
 @router.get(
     "/{user_id}/roles", summary="Получить список ролей пользователя.",
@@ -31,5 +28,14 @@ async def get_roles(db_session: DatabaseSession, user_id: Annotated[UUID4, Path(
     summary="Назначить роль пользователю.",
     description="Назначить роль пользователю.")
 async def add_role(db_session: DatabaseSession, role: RoleUser, user_id: Annotated[UUID4, Path(example=uuid4())]) -> None:
-    await UserRolesService.add_role(session=db_session, user_id=user_id, data=role.model_dump())
+    await UserRolesService.add_role(session=db_session, obj_id=user_id, data=role.model_dump())
+    return None
+
+@router.delete(
+    "/{user_id}/roles",
+    status_code=status.HTTP_200_OK,
+    summary="Отозвать роль у пользователя.",
+    description="Отозвать роль у пользователя.")
+async def delete_role(db_session: DatabaseSession, role: RoleUser, user_id: Annotated[UUID4, Path(example=uuid4())]) -> None:
+    await UserRolesService.delete_role(session=db_session, obj_id=user_id, data=role.model_dump())
     return None
