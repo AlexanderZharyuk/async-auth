@@ -26,13 +26,8 @@ class TimeStampedMixin(object):
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
-<<<<<<< HEAD
-        DateTime(timezone=True), onupdate=func.now(), default=None, nullable=True,
-    )
-=======
         DateTime(timezone=True),
         onupdate=func.now(),
         default=None,
         nullable=True,
     )
->>>>>>> master
