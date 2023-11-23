@@ -4,7 +4,9 @@ import typer
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
 from src.core.config import settings
+from src.v1.auth.helpers import hash_password
 from src.v1.users.models import User
+from src.v1.users.schemas import SuperUserCreate
 
 app = typer.Typer(help="Awesome CLI user manager.")
 
@@ -22,15 +24,26 @@ def create_super_admin():
     print("Creating a new super_admin user:")
     username = typer.prompt("What's super_admin username?")
     password = typer.prompt("What's super_admin password?", hide_input=True)
+    repeat_password = typer.prompt("Type super_admin password again", hide_input=True)
+    if password != repeat_password:
+        print("Passwords do not match")
+        raise typer.Exit(1)
     email = typer.prompt("What's super_admin email?")
     full_name = typer.prompt("What's super_admin full name?")
 
-    # TODO: hash password
-    # password = hashlib.sha256(password.encode()).hexdigest()
+    SuperUserCreate.model_validate(
+        {
+            "username": username,
+            "password": password,
+            "repeat_password": repeat_password,
+            "email": email,
+            "full_name": full_name,
+        }
+    )
 
     super_admin = User(
         username=username,
-        password=password,
+        password=hash_password(password),
         email=email,
         full_name=full_name,
         is_superuser=True,
