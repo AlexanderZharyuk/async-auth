@@ -4,12 +4,12 @@ from typing import List, Mapping
 from sqlalchemy import delete, exc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.v1.exceptions import ServiceError
 from src.v1.roles.exceptions import (
     ColumnNotExist,
     RoleAlreadyExistsError,
     RoleNotFound,
     RolesNotFound,
-    ServiceError,
 )
 from src.v1.roles.models import Role
 from src.v1.roles.schemas import RoleBase, RoleCreate, RoleModify
