@@ -1,12 +1,14 @@
 from asyncio import run as aiorun
 
 import typer
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
 from src.core.config import settings
 from src.v1.auth.helpers import hash_password
+from src.v1.auth.schemas import UserCreate
+from src.v1.exceptions import ServiceError
 from src.v1.users.models import User
-from src.v1.users.schemas import SuperUserCreate
 
 app = typer.Typer(help="Awesome CLI user manager.")
 
@@ -16,10 +18,15 @@ def create_super_admin():
     async def _async_create_user(user: User) -> None:
         engine = create_async_engine(settings.pg_dsn)
         async with AsyncSession(engine, expire_on_commit=False) as session:
-            session.add(user)
-            await session.commit()
-            await session.refresh(user)
-        print(f"Created super_admin user: {user!r}")
+            try:
+                session.add(user)
+                await session.commit()
+                await session.refresh(user)
+            except SQLAlchemyError as exc:
+                print(f"Something went wrong with creating user {user!r}: {exc}")
+                await session.rollback()
+                raise ServiceError
+        print(f"Super_admin user's created: {user!r}")
 
     print("Creating a new super_admin user:")
     username = typer.prompt("What's super_admin username?")
@@ -31,7 +38,7 @@ def create_super_admin():
     email = typer.prompt("What's super_admin email?")
     full_name = typer.prompt("What's super_admin full name?")
 
-    SuperUserCreate.model_validate(
+    UserCreate.model_validate(
         {
             "username": username,
             "password": password,
