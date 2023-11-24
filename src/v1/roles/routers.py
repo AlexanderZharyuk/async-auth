@@ -2,11 +2,7 @@ from fastapi import APIRouter, Path, status
 from typing_extensions import Annotated
 
 from src.db.postgres import DatabaseSession
-from src.v1.roles.schemas import (
-    RoleCreate,
-    RoleUpdate,
-    SeveralRolesResponse,
-    SingleRolesResponse)
+from src.v1.roles.schemas import RoleCreate, RoleUpdate, SeveralRolesResponse, SingleRoleResponse
 from src.v1.roles.service import RoleService
 
 router = APIRouter(prefix="/roles", tags=["Управление ролями"])
@@ -27,40 +23,38 @@ async def get(db_session: DatabaseSession) -> SeveralRolesResponse:
 @router.post(
     "/",
     summary="Создать новую роль.",
-    response_model=SingleRolesResponse,
+    response_model=SingleRoleResponse,
     status_code=status.HTTP_200_OK,
     description="Создать новую роль.",
 )
-async def create(role: RoleCreate, db_session: DatabaseSession) -> SingleRolesResponse:
+async def create(role: RoleCreate, db_session: DatabaseSession) -> SingleRoleResponse:
     role = await RoleService.create(session=db_session, data=role)
-    return SingleRolesResponse(data=role)
+    return SingleRoleResponse(data=role)
 
 
 @router.patch(
     "/{role_id}",
     summary="Редактировать роль.",
-    response_model=SingleRolesResponse,
+    response_model=SingleRoleResponse,
     status_code=status.HTTP_200_OK,
     description="Редактировать роль.",
 )
 async def update(
     role: RoleUpdate, role_id: Annotated[int, Path(example=127856)], db_session: DatabaseSession
-) -> SingleRolesResponse:
-    role = await RoleService.update(
-        session=db_session, role_id=role_id, data=role
-    )
-    return SingleRolesResponse(data=role)
+) -> SingleRoleResponse:
+    role = await RoleService.update(session=db_session, role_id=role_id, data=role)
+    return SingleRoleResponse(data=role)
 
 
 @router.delete(
     "/{role_id}",
     summary="Удалить роль.",
-    response_model=SingleRolesResponse,
+    response_model=SingleRoleResponse,
     status_code=status.HTTP_200_OK,
     description="Удалить роль.",
 )
 async def delete(
     role_id: Annotated[int, Path(example=127856)], db_session: DatabaseSession
-) -> SingleRolesResponse:
-    role = await RoleService.delete(session=db_session, role_id=role_id)
-    return SingleRolesResponse(data=role)
+) -> SingleRoleResponse:
+    await RoleService.delete(session=db_session, role_id=role_id)
+    return SingleRoleResponse(data=[])

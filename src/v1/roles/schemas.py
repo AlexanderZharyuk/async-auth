@@ -20,9 +20,9 @@ class RoleUpdate(BaseModel):
     value: str = Field(..., examples=["Moderator"])
 
 
-class SingleRolesResponse(BaseResponseBody):
-    data: RoleBase | dict
+class SingleRoleResponse(BaseResponseBody):
+    data: RoleBase | list
 
 
 class SeveralRolesResponse(BaseResponseBody):
-    data: list[RoleBase]
+    data: list[RoleBase] | list

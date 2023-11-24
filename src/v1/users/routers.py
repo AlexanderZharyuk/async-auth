@@ -5,13 +5,9 @@ from pydantic import UUID4
 from typing_extensions import Annotated
 
 from src.db.postgres import DatabaseSession
-from src.v1.users.service import UserRolesService
-from src.v1.users.schemas import (
-    RoleUser,
-    SingleUserResponse,
-    SingleHasRole
-)
 from src.v1.roles.schemas import SeveralRolesResponse
+from src.v1.users.schemas import RoleUser, SingleHasRole, SingleUserResponse
+from src.v1.users.service import UserRolesService
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -68,7 +64,7 @@ async def delete_role(
 async def has_role(
     db_session: DatabaseSession,
     user_id: Annotated[UUID4, Path(example=uuid4())],
-    role_id: Annotated[int, Path(example=127856)]
+    role_id: Annotated[int, Path(example=127856)],
 ) -> SeveralRolesResponse:
     result = await UserRolesService.has_role(session=db_session, user_id=user_id, role_id=role_id)
     return SingleHasRole(data=result)

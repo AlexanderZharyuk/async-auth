@@ -1,17 +1,16 @@
 import uuid
-
 from abc import ABC, abstractmethod
 
 from sqlalchemy import or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.v1.auth import models as auth_models
 from src.v1.auth.exceptions import UserAlreadyExistsError
 from src.v1.auth.helpers import generate_user_signature, hash_password
 from src.v1.auth.schemas import User, UserCreate
-from src.v1.users import models as users_models
 from src.v1.exceptions import ServiceError
+from src.v1.users import models as users_models
 
 
 class BaseAuthService(ABC):
@@ -28,9 +27,9 @@ class BaseAuthService(ABC):
             raise UserAlreadyExistsError()
 
         user = users_models.User(
-                id=uuid.uuid4(),
-                **user.model_dump(exclude={"password", "repeat_password", "id"}),
-                password=hash_password(user.password),
+            id=uuid.uuid4(),
+            **user.model_dump(exclude={"password", "repeat_password", "id"}),
+            password=hash_password(user.password),
         )
         user_signature = auth_models.UsersSignatures(
             signature=await generate_user_signature(user.username), user_id=user.id

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 from sqlalchemy import UUID, Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -25,7 +25,9 @@ class User(Base, TimeStampedMixin):
     )
     signature: Mapped[str] = relationship("UsersSignatures", uselist=False, back_populates="user")
 
-    roles: Mapped[List["Role"]] = relationship(secondary=roles_to_users, back_populates="users")
+    roles: Mapped[List["Role"]] = relationship(
+        secondary=roles_to_users, back_populates="users", lazy="selectin"
+    )
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, login={self.username!r}, name={self.full_name!r}, email={self.email!r})"

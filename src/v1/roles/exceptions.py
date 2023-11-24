@@ -6,7 +6,7 @@ from src.schemas import BaseExceptionBody
 
 
 class RolesNotFound(HTTPException):
-    """Возвращаемая модель при ошибках сервиса."""
+    """Возвращаемая модель при отсутсвии ролей в системе."""
 
     def __init__(
         self, status_code: int = HTTPStatus.NOT_FOUND, message: str = "Roles doesn't exists"
@@ -16,7 +16,7 @@ class RolesNotFound(HTTPException):
 
 
 class RoleAlreadyExistsError(HTTPException):
-    """Возвращаемая модель при ошибках сервиса."""
+    """Возвращаемая модель при наличии в системе роли с указываемым именем."""
 
     def __init__(
         self,
@@ -28,7 +28,7 @@ class RoleAlreadyExistsError(HTTPException):
 
 
 class RoleNotFound(HTTPException):
-    """Возвращаемая модель при ошибках сервиса."""
+    """Возвращаемая модель при отсуствии роли."""
 
     def __init__(
         self, status_code: int = HTTPStatus.NOT_FOUND, message: str = "Role not found."
@@ -38,7 +38,7 @@ class RoleNotFound(HTTPException):
 
 
 class FieldNotExist(HTTPException):
-    """Возвращаемая модель при ошибках сервиса."""
+    """Возвращаемая модель при отсутсвии поля, по которому идет обновление.."""
 
     def __init__(
         self, status_code: int = HTTPStatus.NOT_FOUND, message: str = "Field with name not exist."
