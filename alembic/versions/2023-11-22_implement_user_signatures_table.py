@@ -1,7 +1,7 @@
 """Implement user signatures table
 
 Revision ID: c3c718bfc512
-Revises: 024d67eaf3e3
+Revises: 6691ba82635c
 Create Date: 2023-11-22 15:43:55.535900
 
 """

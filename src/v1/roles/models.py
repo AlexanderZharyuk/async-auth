@@ -1,8 +1,18 @@
-from sqlalchemy import ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column
+from typing import List
+
+from sqlalchemy import Table, Column, ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models import Base, TimeStampedMixin
 
+
+"""Модель ассоциативной таблица для связи MtM м/у ролями и пользователями."""
+roles_to_users = Table(
+    "roles_to_users",
+    Base.metadata,
+    Column("user_id", ForeignKey("users.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True),
+    Column("role_id", ForeignKey("roles.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True)
+)
 
 class Role(Base, TimeStampedMixin):
     """Модель таблицы с ролями."""
@@ -10,20 +20,17 @@ class Role(Base, TimeStampedMixin):
     __tablename__ = "roles"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, nullable=False)
-    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    users: Mapped[List["User"]] = relationship(secondary=roles_to_users, back_populates="roles")
 
     def __repr__(self) -> str:
         return f"Role(id={self.id!r}, name={self.name!r})"
 
 
-class RolesToUsers(Base):
-    """Модель ассоциативной таблица для связи MtM м/у ролями и пользователями."""
+"""class RolesToUsers(Base):
 
     __tablename__ = "roles_to_users"
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True
-    )
-    role_id: Mapped[int] = mapped_column(
-        ForeignKey("roles.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True)
+    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True)"""

@@ -9,7 +9,7 @@ from src.v1.exceptions import ServiceError
 from src.v1.users.models import User
 from src.v1.users.schemas import RoleUser
 from src.v1.users.exceptions import UserNotFound
-from src.v1.roles.models import Role, RolesToUsers
+from src.v1.roles.models import Role, roles_to_users
 from src.v1.roles.schemas import RoleBase
 from src.v1.roles.service import RoleService
 from src.v1.roles.exceptions import RoleAlreadyExistsError
@@ -40,8 +40,8 @@ class PostgresUserRolesService(BaseUserService):
         await self.get_user(session=session, user_id=user_id)
         statement = (
             select(Role)
-            .where(RolesToUsers.user_id == user_id)
-            .where(RolesToUsers.role_id == Role.id)
+            .where(roles_to_users.user_id == user_id)
+            .where(roles_to_users.role_id == Role.id)
         )
         query = await session.execute(statement)
         result = query.scalars().all()
@@ -52,7 +52,7 @@ class PostgresUserRolesService(BaseUserService):
         await self.get_user(session=session, user_id=user_id)
         await RoleService.get_role(session=session, role_id=data.role_id)
 
-        roles_to_users = RolesToUsers(user_id=user_id, role_id=data.role_id)
+        #roles_to_users = RolesToUsers(user_id=user_id, role_id=data.role_id)
         try:
             session.add(roles_to_users)
             await session.commit()
@@ -70,9 +70,9 @@ class PostgresUserRolesService(BaseUserService):
 
         try:
             statement = (
-                delete(RolesToUsers)
-                .where(RolesToUsers.role_id == data.role_id)
-                .where(RolesToUsers.user_id == user_id)
+                delete(roles_to_users)
+                .where(roles_to_users.role_id == data.role_id)
+                .where(roles_to_users.user_id == user_id)
             )
             await session.execute(statement)
             await session.commit()
@@ -84,9 +84,9 @@ class PostgresUserRolesService(BaseUserService):
         await self.get_user(session=session, user_id=user_id)
         has_role = False
         statement = (
-            select(RolesToUsers.user_id)
-            .where(RolesToUsers.user_id == user_id)
-            .where(RolesToUsers.role_id == role_id)
+            select(roles_to_users.user_id)
+            .where(roles_to_users.c.user_id == user_id)
+            .where(roles_to_users.c.role_id == role_id)
         )
         query = await session.execute(statement)
         result = query.scalar_one_or_none()

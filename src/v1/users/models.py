@@ -1,12 +1,12 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional, List
 
 from sqlalchemy import UUID, Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models import Base, TimeStampedMixin
-from src.v1.roles.models import RolesToUsers
+from src.v1.roles.models import Role, roles_to_users
 
 
 class User(Base, TimeStampedMixin):
@@ -23,9 +23,9 @@ class User(Base, TimeStampedMixin):
     last_login: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=None, nullable=True
     )
-    # signature: Mapped[str] = relationship("UsersSignatures", uselist=False, back_populates="user")
+    signature: Mapped[str] = relationship("UsersSignatures", uselist=False, back_populates="user")
 
-    roles: Mapped[List[RolesToUsers]] = relationship()
+    roles: Mapped[List["Role"]] = relationship(secondary=roles_to_users, back_populates="users")
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, login={self.username!r}, name={self.full_name!r}, email={self.email!r})"
