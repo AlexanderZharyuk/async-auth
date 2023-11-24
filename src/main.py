@@ -3,7 +3,6 @@ import logging
 import uvicorn
 from fastapi import APIRouter, FastAPI
 from fastapi.responses import ORJSONResponse
-from sqlalchemy.ext.asyncio import create_async_engine
 
 import src.constants as const
 from src.core.config import LOGGING, settings
@@ -41,14 +40,12 @@ app.include_router(v1_router)
 
 @app.on_event("startup")
 async def startup():
-    postgres.pg = postgres.PostgresDatabase(
-        engine=create_async_engine(settings.pg_dsn, echo=True, future=True)
-    )
+    ...
 
 
 @app.on_event("shutdown")
 async def shutdown():
-    await postgres.pg.close()
+    await postgres.db_session.close()
 
 
 if __name__ == "__main__":

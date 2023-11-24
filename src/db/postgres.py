@@ -1,31 +1,27 @@
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from typing import Annotated
+
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
+from src.core.config import settings
 from src.db.storages import Database
 
 
 class PostgresDatabase(Database):
     """Класс БД PostgreSQL"""
 
-    session: AsyncSession
-
-    def __init__(self, engine: AsyncEngine) -> None:
-        super().__init__(client=engine)
+    def __init__(self):
+        super().__init__(engine=create_async_engine(settings.pg_dsn, future=True))
 
     async def __call__(self) -> AsyncSession:
-        async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        async_session = sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
         async with async_session() as session:
-            try:
-                yield session
-            except:
-                await session.rollback()
+            yield session
 
     async def close(self) -> None:
-        await self.client.dispose()
+        await self.engine.dispose()
 
 
-pg: PostgresDatabase | None = None
-
-
-async def get_postgres_storage() -> PostgresDatabase:
-    return pg
+db_session = PostgresDatabase()
+DatabaseSession = Annotated[AsyncSession, Depends(db_session)]

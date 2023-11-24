@@ -1,20 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar
 
-T = TypeVar("T")
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 
-class BaseStorage(ABC):
-    # TODO: Подумать над реализацией
-    """Базовый класс хранилища."""
+class Database(ABC):
+    """Базовый класс объекта базы данных."""
 
-    def __init__(self, client: T, **kwargs) -> None:
-        self.client = client
+    def __init__(self, engine: AsyncEngine) -> None:
+        self.engine = engine
 
     @abstractmethod
     async def close(self) -> None:
         raise NotImplementedError
-
-
-class Database(BaseStorage):
-    pass

@@ -1,4 +1,4 @@
-from functools import lru_cache, cached_property
+from functools import cached_property, lru_cache
 from logging import config as logging_config
 
 from pydantic_settings import BaseSettings
@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     redis_host: str = "redis"
     redis_port: int = 6379
     redis_db: int = 0
-    postgres_host: str = "db"
+    postgres_host: str = "localhost"
     postgres_port: int = 5432
     postgres_db: str = "auth_db"
     postgres_user: str = "app"

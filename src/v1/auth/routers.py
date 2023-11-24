@@ -1,11 +1,16 @@
 from fastapi import APIRouter
 
+from src.db.postgres import DatabaseSession
+from src.v1.auth.schemas import User, UserCreate
+from src.v1.auth.service import AuthService
+
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-@router.get("/", summary="Авторизоваться в сервисе")
-async def mock_route() -> None:
+@router.post("/signup", summary="Регистрация в сервисе")
+async def signup(db_session: DatabaseSession, data: UserCreate) -> User:
     """
-    Mock route.
+    Регистрация пользователя в сервисе.
     """
-    return None
+    user = await AuthService.signup(db_session, data)
+    return user
