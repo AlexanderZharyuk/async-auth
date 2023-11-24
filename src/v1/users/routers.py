@@ -52,3 +52,17 @@ async def delete_role(
 ) -> SingleUserResponse:
     await UserRolesService.delete_role(session=db_session, obj_id=user_id, data=role.model_dump())
     return SingleUserResponse(data=[])
+
+
+@router.get(
+    "/{user_id}/roles/{role_id}",
+    summary="Проверить наличие запрашиваемой роли у пользователя.",
+    response_model=SeveralRolesResponse,
+    status_code=status.HTTP_200_OK,
+    description="Проверить наличие запрашиваемой роли у пользователя.",
+)
+async def get_roles(
+    db_session: DatabaseSession, user_id: Annotated[UUID4, Path(example=uuid4())]
+) -> SeveralRolesResponse:
+    roles = await UserRolesService.get_roles(session=db_session, obj_id=user_id)
+    return SeveralRolesResponse(data=roles)

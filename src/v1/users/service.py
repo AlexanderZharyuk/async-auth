@@ -82,5 +82,8 @@ class PostgresUserRolesService(BaseUserService):
             await session.rollback()
             raise ServiceError
 
+    async def has_role(self, session: AsyncSession, user_id: UUID4, role_id: int) -> bool:
+        return
+
 
 UserRolesService = PostgresUserRolesService()
