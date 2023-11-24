@@ -1,7 +1,7 @@
 """Implement user last logins table
 
 Revision ID: 947dc807a833
-Revises: c3c718bfc512
+Revises: b1fc0494d4c9
 Create Date: 2023-11-25 00:12:57.678704
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "947dc807a833"
-down_revision: Union[str, None] = "c3c718bfc512"
+down_revision: Union[str, None] = "b1fc0494d4c9"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
