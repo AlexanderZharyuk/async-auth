@@ -1,64 +1,51 @@
 import logging
-from abc import ABC, abstractmethod
-from typing import Mapping, List
+from typing import List, Type
 
 from pydantic import UUID4
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.v1.auth.exceptions import PasswordIncorrectError
 from src.v1.auth.helpers import hash_password, verify_password
-from src.v1.exceptions import ObjectNotFound, ServiceError
-from src.v1.users.models import User
-from src.v1.users.schemas import UserBase, UserChange, UserLogin
+from src.v1.exceptions import ServiceError
+from src.v1.users.exceptions import UserNotFound
+from src.v1.users.models import User, UserLogin
+from src.v1.users.schemas import UserBase, UserUpdate, UserLoginSchema
 
 logger = logging.getLogger(__name__)
 
 
-class BaseUserService(ABC):
-    """Basic user service for implement different user services"""
-
-    @staticmethod
-    @abstractmethod
-    async def get(db_session: AsyncSession, obj_id: UUID4) -> UserBase | dict:
-        raise NotImplementedError
-
-    @staticmethod
-    @abstractmethod
-    async def change(db_session: AsyncSession, obj_id: UUID4, data: Mapping) -> UserBase | dict:
-        raise NotImplementedError
-
-
-class PostgresUserService(BaseUserService):
+class PostgresUserService:
     """User service depends on PostgreSQL"""
 
     @staticmethod
-    async def get(db_session: AsyncSession, obj_id: UUID4) -> UserBase | dict:
-        user = await db_session.get(User, obj_id)
+    async def _get_from_db(db_session: AsyncSession, user_id: UUID4) -> Type[User]:
+        user = await db_session.get(User, user_id)
         if not user:
-            raise ObjectNotFound(message="User is not found.")
+            raise UserNotFound()
+        return user
+
+    async def get(self, db_session: AsyncSession, user_id: UUID4) -> UserBase:
+        user = await self._get_from_db(db_session=db_session, user_id=user_id)
         return UserBase.model_validate(user)
 
-    @staticmethod
-    async def change(
-        db_session: AsyncSession, obj_id: UUID4, data_to_change_user: UserChange
-    ) -> UserBase | dict:
-        user = await db_session.get(User, obj_id)
-        if not user:
-            raise ObjectNotFound(message="User is not found.")
+    async def update(
+        self, db_session: AsyncSession, user_id: UUID4, update_data: UserUpdate
+    ) -> UserBase:
+        user = await self._get_from_db(db_session=db_session, user_id=user_id)
 
-        if data_to_change_user.password:
-            if not verify_password(data_to_change_user.old_password, user.password):
-                # ToDo: raise PasswordIncorrect exception from auth
-                raise ValueError("Incorrect password")
-            user.password = hash_password(data_to_change_user.password)
+        if update_data.password:
+            if not verify_password(update_data.old_password, user.password):
+                raise PasswordIncorrectError()
+            user.password = hash_password(update_data.password)
 
-        data_to_change_user_dict = data_to_change_user.model_dump(
+        update_data_dict = update_data.model_dump(
             exclude_none=True, exclude={"password", "repeat_password", "old_password"}
         )
-        for k, v in data_to_change_user_dict.items():
-            if v is not None:
-                setattr(user, k, v)
+        for param, value in update_data_dict.items():
+            if value is not None:
+                setattr(user, param, value)
 
         try:
             await db_session.commit()
@@ -69,26 +56,20 @@ class PostgresUserService(BaseUserService):
             raise ServiceError
         return UserBase.model_validate(user)
 
-    @staticmethod
     async def get_user_login_history(
-        db_session: AsyncSession, obj_id: UUID4, page: int = 1, per_page: int = 50
-    ) -> List[UserLogin]:
+        self, db_session: AsyncSession, user_id: UUID4, page: int = 1, per_page: int = 50
+    ) -> List[UserLoginSchema]:
         limit = per_page * page
         offset = (page - 1) * per_page
-
-        # ToDo: implement after login table is implemented
-        # user = await db_session.get(User, obj_id)
-        # if not user:
-        #     raise ObjectNotFound(message="User is not found.")
-        #
-        # logins = (
-        #     await db_session.execute(select(UserLogin).where(UserLogin.user_id == obj_id))
-        #     .offset(offset)
-        #     .limit(limit)
-        #     .order_by(UserLogin.date)
-        # )
-        # return [UserLogin.model_validate(login) for login in logins.scalars().all()]
-        ...
+        user = await self._get_from_db(db_session=db_session, user_id=user_id)
+        logins = await db_session.execute(
+            select(UserLogin)
+            .where(UserLogin.user_id == user.id)
+            .offset(offset)
+            .limit(limit)
+            .order_by(UserLogin.created_at)
+        )
+        return [UserLoginSchema.model_validate(login) for login in logins.scalars().all()]
 
 
 UserService = PostgresUserService()

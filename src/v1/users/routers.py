@@ -7,9 +7,9 @@ from typing_extensions import Annotated
 
 from src.db.postgres import DatabaseSession
 from src.v1.users.schemas import (
-    SingleUserResponse,
-    SeveralLoginsResponse,
-    UserChange,
+    UserResponse,
+    UserLoginsResponse,
+    UserUpdate,
 )
 from src.v1.users.service import UserService
 
@@ -18,68 +18,61 @@ logger = logging.getLogger(__name__)
 
 
 @router.get(
-    "/{id}",
+    "/{user_id}",
     summary="Получение информации о пользователе.",
-    response_model=SingleUserResponse,
+    response_model=UserResponse,
     status_code=status.HTTP_200_OK,
     description="Получение информации о пользователе.",
 )
 async def get_user(
     db_session: DatabaseSession,
-    id: Annotated[UUID4, Path(example=uuid4())],
-) -> SingleUserResponse:
+    user_id: Annotated[UUID4, Path(example=uuid4())],
+) -> UserResponse:
     """
     Получение информации о конкретном пользователе.
     """
-    user = await UserService.get(db_session=db_session, obj_id=id)
-    return SingleUserResponse(data=user)
+    user = await UserService.get(db_session=db_session, user_id=user_id)
+    return UserResponse(data=user)
 
 
 @router.patch(
-    "/{id}",
+    "/{user_id}",
     summary="Изменение информации о пользователе.",
-    response_model=SingleUserResponse,
+    response_model=UserResponse,
     status_code=status.HTTP_200_OK,
     description="Изменение информации о пользователе.",
 )
-@router.put(
-    "/{id}",
-    summary="Изменение информации о пользователе.",
-    response_model=SingleUserResponse,
-    status_code=status.HTTP_200_OK,
-    description="Изменение информации о пользователе.",
-)
-async def change_user(
+async def update_user(
     db_session: DatabaseSession,
-    id: Annotated[UUID4, Path(example=uuid4())],
-    user_change_data: UserChange,
-) -> SingleUserResponse:
+    user_id: Annotated[UUID4, Path(example=uuid4())],
+    user_change_data: UserUpdate,
+) -> UserResponse:
     """
     Изменение информации о пользователе.
     """
-    user = await UserService.change(
-        db_session=db_session, obj_id=id, data_to_change_user=user_change_data
+    user = await UserService.update(
+        db_session=db_session, user_id=user_id, update_data=user_change_data
     )
-    return SingleUserResponse(data=user)
+    return UserResponse(data=user)
 
 
 @router.get(
-    "/{id}/history",
+    "/{user_id}/history",
     summary="Получение списка последних логинов пользователя.",
-    response_model=SeveralLoginsResponse,
+    response_model=UserLoginsResponse,
     status_code=status.HTTP_200_OK,
     description="Получение списка последних логинов пользователя.",
 )
 async def get_user_login_history(
     db_session: DatabaseSession,
-    id: Annotated[UUID4, Path(example=uuid4())],
+    user_id: Annotated[UUID4, Path(example=uuid4())],
     page: Annotated[int, Query(example=1)],
     per_page: Annotated[int, Query(example=10)],
-) -> SeveralLoginsResponse:
+) -> UserLoginsResponse:
     """
     Получение списка последних логинов пользователя.
     """
     logins = await UserService.get_user_login_history(
-        db_session=db_session, obj_id=id, page=page, per_page=per_page
+        db_session=db_session, user_id=user_id, page=page, per_page=per_page
     )
-    return SeveralLoginsResponse(data=logins)
+    return UserLoginsResponse(data=logins)

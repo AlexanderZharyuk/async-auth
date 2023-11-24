@@ -20,7 +20,7 @@ class UserBase(BaseModel):
         from_attributes = True
 
 
-class UserChange(BaseModel):
+class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(default=None, examples=["George Lucas"])
     email: Optional[EmailStr] = Field(default=None, examples=["j7cZQ@example.com"])
     username: Optional[str] = Field(default=None, examples=["george799"])
@@ -29,7 +29,7 @@ class UserChange(BaseModel):
     repeat_password: Optional[str] = Field(default=None, examples=["12345678"])
 
     @model_validator(mode="after")
-    def validate_params(self) -> "UserChange":
+    def validate_params(self) -> "UserUpdate":
         if self.password:
             if not self.old_password:
                 raise ValueError("You should provide your previous password for changing password")
@@ -38,9 +38,10 @@ class UserChange(BaseModel):
         return self
 
 
-class UserLogin(BaseModel):
+class UserLoginSchema(BaseModel):
     user_id: UUID4 = Field(..., examples=[uuid.uuid4()])
-    date: str = Field(..., examples=["2022-01-01T00:00:00+00:00"])
+    created_at: datetime = Field(..., examples=["2032-04-23T10:20:30.400+02:30"])
+    updated_at: datetime | None = Field(..., examples=["2032-04-23T10:20:30.400+02:30"])
     ip: IPvAnyAddress = Field(..., examples=["1.0.0.1"])
     user_agent: str = Field(
         ...,
@@ -49,10 +50,13 @@ class UserLogin(BaseModel):
         ],
     )
 
+    class Config:
+        from_attributes = True
 
-class SingleUserResponse(BaseResponseBody):
+
+class UserResponse(BaseResponseBody):
     data: UserBase | dict
 
 
-class SeveralLoginsResponse(BaseResponseBody):
-    data: list[UserLogin]
+class UserLoginsResponse(BaseResponseBody):
+    data: list[UserLoginSchema]

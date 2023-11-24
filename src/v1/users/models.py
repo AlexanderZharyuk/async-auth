@@ -27,7 +27,6 @@ class User(Base, TimeStampedMixin):
         "UserSignature", uselist=False, back_populates="user"
     )
     logins: Mapped["UserLogin"] = relationship("UserLogin", back_populates="user")
-
     roles: Mapped[List["Role"]] = relationship(secondary=roles_to_users, back_populates="users")
 
     def __repr__(self) -> str:
