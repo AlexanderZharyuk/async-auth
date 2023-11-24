@@ -6,7 +6,7 @@ from sqlalchemy import UUID, Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models import Base, TimeStampedMixin
-from src.v1.roles.models import RolesToUsers, Role
+from src.v1.roles.models import RolesToUsers
 
 
 class User(Base, TimeStampedMixin):

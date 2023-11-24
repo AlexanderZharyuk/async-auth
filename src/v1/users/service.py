@@ -6,13 +6,13 @@ from sqlalchemy import delete, exc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.v1.exceptions import ServiceError
+from src.v1.users.models import User
+from src.v1.users.schemas import RoleUser
+from src.v1.users.exceptions import UserNotFound
 from src.v1.roles.models import Role, RolesToUsers
 from src.v1.roles.schemas import RoleBase
 from src.v1.roles.service import RoleService
 from src.v1.roles.exceptions import RoleAlreadyExistsError
-from src.v1.users.models import User
-from src.v1.users.schemas import RoleUser
-from src.v1.users.exceptions import UserNotFound
 
 
 class BaseUserService(ABC):
@@ -81,7 +81,18 @@ class PostgresUserRolesService(BaseUserService):
             raise ServiceError
 
     async def has_role(self, session: AsyncSession, user_id: UUID4, role_id: int) -> bool:
-        return
+        await self.get_user(session=session, user_id=user_id)
+        has_role = False
+        statement = (
+            select(RolesToUsers.user_id)
+            .where(RolesToUsers.user_id == user_id)
+            .where(RolesToUsers.role_id == role_id)
+        )
+        query = await session.execute(statement)
+        result = query.scalar_one_or_none()
+        if result is not None:
+            has_role = True
+        return has_role
 
 
 UserRolesService = PostgresUserRolesService()

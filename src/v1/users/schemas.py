@@ -9,3 +9,7 @@ class RoleUser(BaseModel):
 
 class SingleUserResponse(BaseResponseBody):
     data: dict
+
+
+class SingleHasRole(BaseResponseBody):
+    data: bool

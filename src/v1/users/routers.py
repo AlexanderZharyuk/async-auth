@@ -6,7 +6,11 @@ from typing_extensions import Annotated
 
 from src.db.postgres import DatabaseSession
 from src.v1.users.service import UserRolesService
-from src.v1.users.schemas import RoleUser, SingleUserResponse
+from src.v1.users.schemas import (
+    RoleUser,
+    SingleUserResponse,
+    SingleHasRole
+)
 from src.v1.roles.schemas import SeveralRolesResponse
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -57,12 +61,14 @@ async def delete_role(
 @router.get(
     "/{user_id}/roles/{role_id}",
     summary="Проверить наличие запрашиваемой роли у пользователя.",
-    response_model=SeveralRolesResponse,
+    response_model=SingleHasRole,
     status_code=status.HTTP_200_OK,
     description="Проверить наличие запрашиваемой роли у пользователя.",
 )
-async def get_roles(
-    db_session: DatabaseSession, user_id: Annotated[UUID4, Path(example=uuid4())]
+async def has_role(
+    db_session: DatabaseSession,
+    user_id: Annotated[UUID4, Path(example=uuid4())],
+    role_id: Annotated[int, Path(example=127856)]
 ) -> SeveralRolesResponse:
-    roles = await UserRolesService.has_role(session=db_session, user_id=user_id)
-    return SeveralRolesResponse(data=roles)
+    result = await UserRolesService.has_role(session=db_session, user_id=user_id, role_id=role_id)
+    return SingleHasRole(data=result)
