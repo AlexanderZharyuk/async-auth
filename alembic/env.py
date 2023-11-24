@@ -6,8 +6,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from src.core.config import settings
 from src.models import Base
-from src.v1.users.models import User
-from src.v1.auth.models import UsersSignatures
+from src.v1.users.models import User, UserSignature
 from alembic import context
 
 # this is the Alembic Config object, which provides
