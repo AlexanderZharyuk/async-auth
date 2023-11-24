@@ -5,9 +5,9 @@ from pydantic import UUID4
 from typing_extensions import Annotated
 
 from src.db.postgres import DatabaseSession
-from src.v1.roles.schemas import SeveralRolesResponse
-from src.v1.users.schemas import RoleUser, SingleUserResponse
 from src.v1.users.service import UserRolesService
+from src.v1.users.schemas import RoleUser, SingleUserResponse
+from src.v1.roles.schemas import SeveralRolesResponse
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/users", tags=["Users"])
 async def get_roles(
     db_session: DatabaseSession, user_id: Annotated[UUID4, Path(example=uuid4())]
 ) -> SeveralRolesResponse:
-    roles = await UserRolesService.get_roles(session=db_session, obj_id=user_id)
+    roles = await UserRolesService.get_roles(session=db_session, user_id=user_id)
     return SeveralRolesResponse(data=roles)
 
 
@@ -36,7 +36,7 @@ async def get_roles(
 async def add_role(
     db_session: DatabaseSession, role: RoleUser, user_id: Annotated[UUID4, Path(example=uuid4())]
 ) -> SingleUserResponse:
-    await UserRolesService.add_role(session=db_session, obj_id=user_id, data=role.model_dump())
+    await UserRolesService.add_role(session=db_session, user_id=user_id, data=role)
     return SingleUserResponse(data={})
 
 
@@ -50,8 +50,8 @@ async def add_role(
 async def delete_role(
     db_session: DatabaseSession, role: RoleUser, user_id: Annotated[UUID4, Path(example=uuid4())]
 ) -> SingleUserResponse:
-    await UserRolesService.delete_role(session=db_session, obj_id=user_id, data=role.model_dump())
-    return SingleUserResponse(data=[])
+    await UserRolesService.delete_role(session=db_session, user_id=user_id, data=role)
+    return SingleUserResponse(data={})
 
 
 @router.get(
@@ -64,5 +64,5 @@ async def delete_role(
 async def get_roles(
     db_session: DatabaseSession, user_id: Annotated[UUID4, Path(example=uuid4())]
 ) -> SeveralRolesResponse:
-    roles = await UserRolesService.get_roles(session=db_session, obj_id=user_id)
+    roles = await UserRolesService.has_role(session=db_session, user_id=user_id)
     return SeveralRolesResponse(data=roles)

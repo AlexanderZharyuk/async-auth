@@ -37,11 +37,11 @@ class RoleNotFound(HTTPException):
         super().__init__(status_code=status_code, detail=detail.model_dump())
 
 
-class ColumnNotExist(HTTPException):
+class FieldNotExist(HTTPException):
     """Возвращаемая модель при ошибках сервиса."""
 
     def __init__(
-        self, status_code: int = HTTPStatus.NOT_FOUND, message: str = "Column with name not exist."
+        self, status_code: int = HTTPStatus.NOT_FOUND, message: str = "Field with name not exist."
     ) -> None:
         detail = BaseExceptionBody(detail={"code": 5004, "message": message})
         super().__init__(status_code=status_code, detail=detail.model_dump())

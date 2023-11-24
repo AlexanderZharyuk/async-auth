@@ -1,54 +1,32 @@
-from abc import ABC, abstractmethod
-from typing import List, Mapping
+from typing import List
 
 from sqlalchemy import delete, exc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.v1.exceptions import ServiceError
 from src.v1.roles.exceptions import (
-    ColumnNotExist,
-    RoleAlreadyExistsError,
-    RoleNotFound,
     RolesNotFound,
+    RoleNotFound,
+    RoleAlreadyExistsError,
+    FieldNotExist,
 )
 from src.v1.roles.models import Role
-from src.v1.roles.schemas import RoleBase, RoleCreate, RoleModify
+from src.v1.roles.schemas import RoleBase, RoleCreate, RoleUpdate
 
 
-class BaseRolesService(ABC):
-    """Basic roles service for implement different roles services"""
+class PostgreRolesService():
+    """Role service depends on PostgreSQL"""
 
-    @staticmethod
-    async def get_role(session: AsyncSession, obj_id: int) -> Role:
+    async def get_role(self, session: AsyncSession, role_id: int) -> Role:
         """Check if the role exists by id"""
-        statement = select(Role).where(Role.id == obj_id)
+        statement = select(Role).where(Role.id == role_id)
         query = await session.execute(statement)
         result = query.scalar_one_or_none()
         if result is None:
             raise RoleNotFound
         return result
 
-    @abstractmethod
-    async def get_roles(self, session: AsyncSession) -> List[RoleBase]:
-        ...
-
-    @abstractmethod
-    async def create_role(self, session: AsyncSession, data: Mapping) -> RoleBase:
-        ...
-
-    @abstractmethod
-    async def modify_role(self, session: AsyncSession, obj_id: int, data: Mapping) -> RoleBase:
-        ...
-
-    @abstractmethod
-    async def delete_role(self, session: AsyncSession, obj_id: int) -> RoleBase:
-        ...
-
-
-class PostgreRolesService(BaseRolesService):
-    """Role service depends on PostgreSQL"""
-
-    async def get_roles(self, session: AsyncSession) -> List[RoleBase]:
+    async def get(self, session: AsyncSession) -> List[RoleBase]:
         statement = select(Role).order_by(Role.id)
         query = await session.execute(statement)
         result = query.scalars().fetchall()
@@ -57,10 +35,9 @@ class PostgreRolesService(BaseRolesService):
         roles = [RoleBase.model_validate(role) for role in result]
         return roles
 
-    async def create_role(self, session: AsyncSession, data: Mapping) -> RoleBase:
-        role_name = RoleCreate(**data).name
-        role = Role(name=RoleCreate(**data).name)
-        statement = select(Role).where(Role.name == role_name)
+    async def create(self, session: AsyncSession, data: RoleCreate) -> RoleBase:
+        role = Role(name=data.name)
+        statement = select(Role).where(Role.name == data.name)
         query = await session.execute(statement)
         if query.scalar():
             raise RoleAlreadyExistsError
@@ -73,19 +50,18 @@ class PostgreRolesService(BaseRolesService):
             await session.rolback()
             raise ServiceError
 
-    async def modify_role(self, session: AsyncSession, obj_id: int, data: Mapping) -> RoleBase:
-        params = RoleModify(**data)
-        await self.get_role(session=session, obj_id=obj_id)
+    async def update(self, session: AsyncSession, role_id: int, data: RoleUpdate) -> RoleBase:
+        await self.get_role(session=session, role_id=role_id)
 
-        if hasattr(Role, params.name_column):
+        if hasattr(Role, data.name_column):
             statement = (
                 update(Role)
-                .where(Role.id == obj_id)
-                .values({params.name_column: params.value})
+                .where(Role.id == role_id)
+                .values({data.name_column: data.value})
                 .returning(Role)
             )
         else:
-            raise ColumnNotExist
+            raise FieldNotExist
 
         try:
             query = await session.execute(statement)
@@ -99,11 +75,11 @@ class PostgreRolesService(BaseRolesService):
             await session.rollback()
             raise ServiceError
 
-    async def delete_role(self, session: AsyncSession, obj_id: int) -> RoleBase:
-        await self.get_role(session=session, obj_id=obj_id)
+    async def delete(self, session: AsyncSession, role_id: int) -> RoleBase:
+        await self.get_role(session=session, role_id=role_id)
 
         try:
-            statement = delete(Role).where(Role.id == obj_id).returning(Role)
+            statement = delete(Role).where(Role.id == role_id).returning(Role)
             query = await session.execute(statement)
             await session.commit()
             role = query.scalar_one()

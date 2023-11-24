@@ -15,7 +15,7 @@ class RoleCreate(BaseModel):
     name: str = Field(..., examples=["Администратор системы."])
 
 
-class RoleModify(BaseModel):
+class RoleUpdate(BaseModel):
     name_column: str = Field(..., examples=["name"])
     value: str = Field(..., examples=["Moderator"])
 
