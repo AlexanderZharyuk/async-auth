@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from src.core.config import settings
 from src.models import Base
 from src.v1.users.models import User, UserSignature
+from src.v1.roles.models import Role, roles_to_users
 from alembic import context
 
 # this is the Alembic Config object, which provides
