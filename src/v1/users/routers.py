@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 )
 async def get_user(
     db_session: DatabaseSession,
-    user_id: Annotated[UUID4, Path(example=uuid4())],
+    user_id: Annotated[UUID4, Path(examples=[uuid4()])],
 ) -> UserResponse:
     """
     Получение информации о конкретном пользователе.
@@ -44,7 +44,7 @@ async def get_user(
 )
 async def update_user(
     db_session: DatabaseSession,
-    user_id: Annotated[UUID4, Path(example=uuid4())],
+    user_id: Annotated[UUID4, Path(examples=[uuid4()])],
     user_change_data: UserUpdate,
 ) -> UserResponse:
     """
@@ -65,9 +65,9 @@ async def update_user(
 )
 async def get_user_login_history(
     db_session: DatabaseSession,
-    user_id: Annotated[UUID4, Path(example=uuid4())],
-    page: Annotated[int, Query(example=1)],
-    per_page: Annotated[int, Query(example=10)],
+    user_id: Annotated[UUID4, Path(examples=[uuid4()])],
+    page: Annotated[int, Query(examples=[1])],
+    per_page: Annotated[int, Query(examples=[10])],
 ) -> UserLoginsResponse:
     """
     Получение списка последних логинов пользователя.

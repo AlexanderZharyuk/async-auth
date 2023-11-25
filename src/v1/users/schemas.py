@@ -2,13 +2,16 @@ import uuid
 from datetime import datetime
 from typing import Optional, List
 
-from pydantic import UUID4, BaseModel, Field, EmailStr, IPvAnyAddress, model_validator
+from pydantic import UUID4, BaseModel, Field, EmailStr, IPvAnyAddress, model_validator, ConfigDict
 
 from src.schemas import BaseResponseBody
+
 # from src.v1.roles.schemas import RoleBase
 
 
 class UserBase(BaseModel):
+    model_config: ConfigDict = ConfigDict(from_attributes=True)
+
     id: UUID4 = Field(..., examples=[uuid.uuid4()])
     full_name: str | None = Field(..., examples=["George Lucas"])
     email: EmailStr = Field(..., examples=["j7cZQ@example.com"])
@@ -18,9 +21,6 @@ class UserBase(BaseModel):
     last_login: datetime | None = Field(..., examples=["2032-04-23T10:20:30.400+02:30"])
     # ToDo: add roles after implementing roles
     # roles: Optional[List[RoleBase]] = Field(default=[], examples=[{"id": 1, "name": "Administrator"}])
-
-    class Config:
-        from_attributes = True
 
 
 class UserUpdate(BaseModel):
@@ -42,6 +42,8 @@ class UserUpdate(BaseModel):
 
 
 class UserLoginSchema(BaseModel):
+    model_config: ConfigDict = ConfigDict(from_attributes=True)
+
     user_id: UUID4 = Field(..., examples=[uuid.uuid4()])
     created_at: datetime = Field(..., examples=["2032-04-23T10:20:30.400+02:30"])
     updated_at: datetime | None = Field(..., examples=["2032-04-23T10:20:30.400+02:30"])
@@ -52,9 +54,6 @@ class UserLoginSchema(BaseModel):
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/100.0.4896.127 Safari/537.36"
         ],
     )
-
-    class Config:
-        from_attributes = True
 
 
 class UserResponse(BaseResponseBody):
