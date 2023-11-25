@@ -3,13 +3,13 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from fastapi import Request, Response
-from pydantic import UUID4, BaseModel
+from pydantic import BaseModel
 from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
-from src.db.storages import RefreshTokensStorage
+from src.db.postgres import RefreshTokensStorage
 from src.v1.auth.exceptions import UserAlreadyExistsError, UserNotFoundError
 from src.v1.auth.helpers import (
     generate_jwt,
@@ -83,7 +83,7 @@ class JWTAuthService(BaseAuthService):
         if not verify_password(user.password, exists_user.password):
             raise UserNotFoundError()
 
-        await __class__._save_login_session_if_not_exists(db_session, exists_user.id, request)
+        await __class__._save_login_session_if_not_exists(db_session, exists_user, request)
 
         # TODO: Add role to JWT
         tokens = generate_jwt(
@@ -107,14 +107,14 @@ class JWTAuthService(BaseAuthService):
 
     @staticmethod
     async def _save_login_session_if_not_exists(
-        db_session: AsyncSession, user_id: UUID4, request: Request
+        db_session: AsyncSession, user: users_models.User, request: Request
     ):
         request_ip = request.client.host
         user_agent = request.headers.get("User-Agent")
 
         statement = select(users_models.UserLogin).filter(
             and_(
-                users_models.UserLogin.user_id == user_id,
+                users_models.UserLogin.user_id == user.id,
                 users_models.UserLogin.ip == request_ip,
                 users_models.UserLogin.user_agent == user_agent,
             )
@@ -122,13 +122,19 @@ class JWTAuthService(BaseAuthService):
         result = await db_session.execute(statement)
         if (exists_login := result.scalar()) is None:
             exists_login = users_models.UserLogin(
-                user_id=user_id, ip=request_ip, user_agent=user_agent, time=datetime.now()
+                user_id=user.id, ip=request_ip, user_agent=user_agent
             )
         else:
-            exists_login.time = datetime.now()
+            exists_login.updated_at = datetime.now()
 
+        user.last_login = datetime.now()
         db_session.add(exists_login)
-        await db_session.commit()
+        db_session.add(user)
+        try:
+            await db_session.commit()
+        except SQLAlchemyError:
+            await db_session.rollback()
+            raise ServiceError()
 
     @staticmethod
     async def _set_user_cookie(cookie_key: str, cookie_value: str, response: Response):
@@ -138,8 +144,8 @@ class JWTAuthService(BaseAuthService):
             httponly=settings.jwt_access_token_cookie_httponly,
             secure=settings.jwt_access_token_cookie_secure,
             samesite=settings.jwt_access_token_cookie_samesite,
-            max_age=settings.jwt_access_token_cookie_expire_time,
-            expires=settings.jwt_access_token_cookie_expire_time,
+            max_age=settings.jwt_access_expire_time_in_seconds,
+            expires=settings.jwt_access_expire_time_in_seconds
         )
 
 

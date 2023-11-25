@@ -1,15 +1,16 @@
 from typing import Annotated
 from datetime import datetime
-from functools import lru_cache
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 from jose import jwt
 from pydantic import UUID4
 from sqlalchemy import delete
 
 from src.core.config import settings
+from src.v1.exceptions import ServiceError
 from src.db.storages import Database, BaseStorage
 from src.v1.auth.helpers import decode_jwt
 from src.v1.users.models import UserRefreshTokens
@@ -31,7 +32,9 @@ class PostgresDatabase(Database):
         await self.engine.dispose()
 
 
-class RefreshTokenPostgresStorage(BaseStorage):
+class PostgresRefreshTokenStorage(BaseStorage):
+    """Класс для хранения рефреш-токенов в PostgreSQL"""
+
     @staticmethod
     async def create(db_session: AsyncSession, refresh_token: str, user_id: UUID4) -> UUID4:
         token_headers = jwt.get_unverified_header(refresh_token)
@@ -42,7 +45,12 @@ class RefreshTokenPostgresStorage(BaseStorage):
             expire_at=datetime.fromtimestamp(token_data.get("exp")),
         )
         db_session.add(refresh_token)
-        await db_session.commit()
+        try:
+            await db_session.commit()
+        except SQLAlchemyError:
+            await db_session.rollback()
+            raise ServiceError()
+        
         return refresh_token.token
 
     @staticmethod
@@ -66,7 +74,7 @@ class RefreshTokenPostgresStorage(BaseStorage):
 
 
 db_session = PostgresDatabase()
-refresh_tokens_storage = RefreshTokenPostgresStorage()
+refresh_tokens_storage = PostgresRefreshTokenStorage()
 DatabaseSession = Annotated[AsyncSession, Depends(db_session)]
-RefreshTokensStorage = Annotated[RefreshTokenPostgresStorage, Depends(refresh_tokens_storage)]
+RefreshTokensStorage = Annotated[PostgresRefreshTokenStorage, Depends(refresh_tokens_storage)]
 

@@ -28,20 +28,24 @@ def generate_user_signature(username: str) -> str:
 
 
 def generate_jwt(payload: dict, access_jti: str, refresh_jti: UUID4) -> JWTTokens:
-    access_token_expire_date = datetime.now() + timedelta(minutes=settings.jwt_access_expire_time)
-    refresh_token_expire_date = datetime.now() + timedelta(days=settings.jwt_refresh_expire_time)
+    access_token_expire_date = datetime.now() + timedelta(
+        seconds=settings.jwt_access_expire_time_in_seconds
+    )
+    refresh_token_expire_date = datetime.now() + timedelta(
+        seconds=settings.jwt_refresh_expire_time_in_seconds
+    )
     access_token_payload = {"exp": access_token_expire_date, **payload}
     refresh_token_payload = {"exp": refresh_token_expire_date}
 
     access_token = jwt.encode(
         access_token_payload,
-        algorithm=settings.jwt_alogrithm,
+        algorithm=settings.jwt_algorithm,
         key=settings.jwt_secret_key,
         headers={"jti": access_jti},
     )
     refresh_token = jwt.encode(
         refresh_token_payload,
-        algorithm=settings.jwt_alogrithm,
+        algorithm=settings.jwt_algorithm,
         key=settings.jwt_secret_key,
         headers={"jti": str(refresh_jti)},
     )
@@ -49,4 +53,4 @@ def generate_jwt(payload: dict, access_jti: str, refresh_jti: UUID4) -> JWTToken
 
 
 def decode_jwt(token: str) -> dict:
-    return jwt.decode(token, key=settings.jwt_secret_key, algorithms=[settings.jwt_alogrithm])
+    return jwt.decode(token, key=settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])

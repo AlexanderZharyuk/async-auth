@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Response, status
 
 from src.db.postgres import DatabaseSession
-from src.db.storages import RefreshTokensStorage
+from src.db.postgres import RefreshTokensStorage
 from src.v1.auth.schemas import TokensResponse, UserCreate, UserLogin, UserResponse
 from src.v1.auth.service import AuthService
 

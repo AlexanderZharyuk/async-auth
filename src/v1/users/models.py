@@ -57,10 +57,9 @@ class UserLogin(Base, TimeStampedMixin):
     user: Mapped[User] = relationship("User", back_populates="logins")
     ip: Mapped[str] = mapped_column(String(120), nullable=False)
     user_agent: Mapped[str] = mapped_column(String(150), nullable=False)
-    time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     def __repr__(self) -> str:
-        return f"UserLogin(User: {self.user}, IP: {self.ip}, Time: {self.time})"
+        return f"UserLogin(User: {self.user}, IP: {self.ip}, Time: {self.updated_at})"
 
 
 class UserRefreshTokens(Base, TimeStampedMixin):
