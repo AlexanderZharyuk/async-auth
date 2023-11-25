@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 from src.schemas import BaseResponseBody
@@ -16,13 +18,12 @@ class RoleCreate(BaseModel):
 
 
 class RoleUpdate(BaseModel):
-    name_column: str = Field(..., examples=["name"])
-    value: str = Field(..., examples=["Moderator"])
+    name: Optional[str] = Field(..., examples=["Модератор системы."])
 
 
 class SingleRoleResponse(BaseResponseBody):
-    data: RoleBase | list
+    data: RoleBase | dict
 
 
 class SeveralRolesResponse(BaseResponseBody):
-    data: list[RoleBase] | list
+    data: list[RoleBase] | dict

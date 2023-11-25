@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import List
 
@@ -6,10 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.v1.exceptions import ServiceError
 from src.v1.roles.exceptions import (
-    FieldNotExist,
     RoleAlreadyExistsError,
-    RoleNotFound,
-    RolesNotFound,
+    RoleNotFound
 )
 from src.v1.roles.models import Role
 from src.v1.roles.schemas import RoleBase, RoleCreate, RoleUpdate
@@ -29,12 +29,12 @@ class PostgreRolesService:
             raise RoleNotFound
         return result
 
-    async def get(self, session: AsyncSession) -> List:
+    async def get(self, session: AsyncSession) -> List[RoleBase] | dict:
         statement = select(Role).order_by(Role.id)
         query = await session.execute(statement)
         result = query.scalars().fetchall()
         if not result:
-            return []
+            return {}
         roles = [RoleBase.model_validate(role) for role in result]
         return roles
 
@@ -57,15 +57,12 @@ class PostgreRolesService:
     async def update(self, session: AsyncSession, role_id: int, data: RoleUpdate) -> RoleBase:
         await self.get_role(session=session, role_id=role_id)
 
-        if hasattr(Role, data.name_column):
-            statement = (
-                update(Role)
-                .where(Role.id == role_id)
-                .values({data.name_column: data.value})
-                .returning(Role)
-            )
-        else:
-            raise FieldNotExist
+        statement = (
+            update(Role)
+            .where(Role.id == role_id)
+            .values({Role.name: data.name})
+            .returning(Role)
+        )
 
         try:
             query = await session.execute(statement)
@@ -85,9 +82,8 @@ class PostgreRolesService:
 
         try:
             statement = delete(Role).where(Role.id == role_id).returning(Role)
-            query = await session.execute(statement)
+            await session.execute(statement)
             await session.commit()
-            role = query.scalar_one()
         except exc.SQLAlchemyError as error:
             logger.exception(error)
             await session.rollback()

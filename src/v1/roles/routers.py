@@ -57,4 +57,4 @@ async def delete(
     role_id: Annotated[int, Path(example=127856)], db_session: DatabaseSession
 ) -> SingleRoleResponse:
     await RoleService.delete(session=db_session, role_id=role_id)
-    return SingleRoleResponse(data=[])
+    return SingleRoleResponse(data={})
