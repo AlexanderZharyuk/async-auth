@@ -16,9 +16,7 @@ from src.v1.users.schemas import UserBase, UserUpdate, UserLoginSchema
 logger = logging.getLogger(__name__)
 
 
-class PostgresUserService:
-    """User service depends on PostgreSQL"""
-
+class BaseUserService:
     @staticmethod
     async def _get_from_db(db_session: AsyncSession, user_id: UUID4) -> Type[User]:
         user = await db_session.get(User, user_id)
@@ -72,4 +70,4 @@ class PostgresUserService:
         return [UserLoginSchema.model_validate(login) for login in logins.scalars().all()]
 
 
-UserService = PostgresUserService()
+UserService = BaseUserService()
