@@ -36,7 +36,7 @@ class PostgreUserService(BaseUserService):
     """User service depends on PostgreSQL"""
 
 
-class PostgresUserRolesService(BaseUserService):
+class UserRolesService(BaseUserService):
     """Managing user roles service depends on PostgreSQL"""
 
     async def get_roles(self, session: AsyncSession, user_id: UUID4) -> List:
@@ -90,4 +90,4 @@ class PostgresUserRolesService(BaseUserService):
         return result is not None
 
 
-UserRolesService = PostgresUserRolesService()
+UserRolesService = UserRolesService()

@@ -17,7 +17,7 @@ from src.v1.roles.schemas import RoleBase, RoleCreate, RoleUpdate
 logger = logging.getLogger(__name__)
 
 
-class PostgreRolesService:
+class RoleService:
     """Role service depends on PostgreSQL"""
 
     async def get_role(self, session: AsyncSession, role_id: int) -> Role:
@@ -90,4 +90,4 @@ class PostgreRolesService:
             raise ServiceError
 
 
-RoleService = PostgreRolesService()
+RoleService = RoleService()
