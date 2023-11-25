@@ -27,15 +27,13 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(default=None, examples=["George Lucas"])
     email: Optional[EmailStr] = Field(default=None, examples=["j7cZQ@example.com"])
     username: Optional[str] = Field(default=None, examples=["george799"])
-    old_password: Optional[str] = Field(default=None, examples=["12345678"])
+    current_password: str = Field(..., examples=["12345678"])
     password: Optional[str] = Field(default=None, examples=["12345678"])
     repeat_password: Optional[str] = Field(default=None, examples=["12345678"])
 
     @model_validator(mode="after")
     def validate_params(self) -> "UserUpdate":
         if self.password:
-            if not self.old_password:
-                raise ValueError("You should provide your previous password for changing password")
             if self.password != self.repeat_password:
                 raise ValueError("Passwords do not match")
         return self

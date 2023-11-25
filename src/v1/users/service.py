@@ -2,14 +2,14 @@ import logging
 from typing import List, Type
 
 from pydantic import UUID4
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.v1.auth.exceptions import PasswordIncorrectError
 from src.v1.auth.helpers import hash_password, verify_password
 from src.v1.exceptions import ServiceError
-from src.v1.users.exceptions import UserNotFound
+from src.v1.users.exceptions import UserNotFound, UserParamsAlreadyOccupied
 from src.v1.users.models import User, UserLogin
 from src.v1.users.schemas import UserBase, UserUpdate, UserLoginSchema
 
@@ -18,28 +18,37 @@ logger = logging.getLogger(__name__)
 
 class BaseUserService:
     @staticmethod
-    async def _get_from_db(db_session: AsyncSession, user_id: UUID4) -> Type[User]:
+    async def get(db_session: AsyncSession, user_id: UUID4) -> Type[User]:
         user = await db_session.get(User, user_id)
         if not user:
             raise UserNotFound()
         return user
 
-    async def get(self, db_session: AsyncSession, user_id: UUID4) -> UserBase:
-        user = await self._get_from_db(db_session=db_session, user_id=user_id)
-        return UserBase.model_validate(user)
-
     async def update(
         self, db_session: AsyncSession, user_id: UUID4, update_data: UserUpdate
     ) -> UserBase:
-        user = await self._get_from_db(db_session=db_session, user_id=user_id)
+        user = await self.get(db_session=db_session, user_id=user_id)
+        if not verify_password(update_data.current_password, user.password):
+            raise PasswordIncorrectError()
+
+        conflicts = await db_session.execute(
+            select(User)
+            .filter(
+                or_(
+                    User.email == update_data.email,
+                    User.username == update_data.username,
+                )
+            )
+            .where(User.id != user_id)
+        )
+        if conflicts.scalar():
+            raise UserParamsAlreadyOccupied()
 
         if update_data.password:
-            if not verify_password(update_data.old_password, user.password):
-                raise PasswordIncorrectError()
             user.password = hash_password(update_data.password)
 
         update_data_dict = update_data.model_dump(
-            exclude_none=True, exclude={"password", "repeat_password", "old_password"}
+            exclude_none=True, exclude={"password", "repeat_password", "current_password"}
         )
         for param, value in update_data_dict.items():
             if value is not None:
@@ -59,7 +68,7 @@ class BaseUserService:
     ) -> List[UserLoginSchema]:
         limit = per_page * page
         offset = (page - 1) * per_page
-        user = await self._get_from_db(db_session=db_session, user_id=user_id)
+        user = await self.get(db_session=db_session, user_id=user_id)
         logins = await db_session.execute(
             select(UserLogin)
             .where(UserLogin.user_id == user.id)

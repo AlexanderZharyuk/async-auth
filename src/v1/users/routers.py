@@ -6,11 +6,7 @@ from pydantic import UUID4
 from typing_extensions import Annotated
 
 from src.db.postgres import DatabaseSession
-from src.v1.users.schemas import (
-    UserResponse,
-    UserLoginsResponse,
-    UserUpdate,
-)
+from src.v1.users.schemas import UserResponse, UserLoginsResponse, UserUpdate, UserBase
 from src.v1.users.service import UserService
 
 router = APIRouter(prefix="/users", tags=["Пользователи"])
@@ -32,7 +28,7 @@ async def get_user(
     Получение информации о конкретном пользователе.
     """
     user = await UserService.get(db_session=db_session, user_id=user_id)
-    return UserResponse(data=user)
+    return UserResponse(data=UserBase.model_validate(user))
 
 
 @router.patch(
