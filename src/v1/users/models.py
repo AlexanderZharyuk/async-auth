@@ -26,7 +26,7 @@ class User(Base, TimeStampedMixin):
     signature: Mapped["UserSignature"] = relationship(
         "UserSignature", uselist=False, back_populates="user"
     )
-    logins: Mapped["UserLogin"] = relationship("UserLogin", back_populates="user")
+    logins: Mapped["UserLogin"] = relationship("UserLogin", back_populates="user", lazy="selectin")
     roles: Mapped[List["Role"]] = relationship(
         secondary=roles_to_users, back_populates="users", lazy="selectin"
     )
