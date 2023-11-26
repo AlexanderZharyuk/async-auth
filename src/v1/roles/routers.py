@@ -5,7 +5,7 @@ from src.db.postgres import DatabaseSession
 from src.v1.roles.schemas import RoleCreate, RoleUpdate, SeveralRolesResponse, SingleRoleResponse
 from src.v1.roles.service import RoleService
 
-router = APIRouter(prefix="/roles", tags=["Управление ролями"])
+router = APIRouter(prefix="/roles", tags=["Роли"])
 
 
 @router.get(
