@@ -3,10 +3,11 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from fastapi import Request, Response
-from pydantic import BaseModel, UUID4
-from sqlalchemy import and_, or_, select, delete
+from pydantic import BaseModel
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from jose import jwt
 
 from src.core.config import settings
 from src.db.postgres import RefreshTokensStorage
@@ -16,9 +17,11 @@ from src.v1.auth.helpers import (
     generate_user_signature,
     hash_password,
     verify_password,
-    decode_jwt
+    decode_jwt,
+    validate_jwt
 )
 from src.v1.auth.schemas import JWTTokens, User, UserCreate, UserLogin
+from src.db.redis import BlacklistSignatureStorage
 from src.v1.exceptions import ServiceError
 from src.v1.users.service import UserService
 from src.v1.users import models as users_models
@@ -91,7 +94,7 @@ class JWTAuthService(BaseAuthService):
 
         # TODO: Add role to JWT
         tokens = generate_jwt(
-            payload={"user_id": str(exists_user.id)},
+            payload={"user_id": str(exists_user.id), "username": exists_user.username},
             access_jti=exists_user.signature.signature,
             refresh_jti=uuid.uuid4(),
         )
@@ -116,8 +119,30 @@ class JWTAuthService(BaseAuthService):
     async def verify(current_user=None):
         ...
 
-    async def terminate_all_sessions(current_user=None):
-        ...
+    @staticmethod
+    async def terminate_all_sessions(
+        db_session: AsyncSession,
+        blacklist_signatures_storage: BlacklistSignatureStorage,
+        refresh_token_storage: RefreshTokensStorage,
+        response: Response,
+        access_token: str
+    ):
+        """Terminate all sessions"""
+
+        await validate_jwt(blacklist_signatures_storage, access_token)
+        response.delete_cookie(settings.sessions_cookie_name)
+        token_payload = decode_jwt(access_token)
+        token_headers = jwt.get_unverified_header(access_token)
+        
+        username = token_payload.get("username")
+        user_id = token_payload.get("user_id")
+        old_user_signature = token_headers.get("jti")
+        new_user_signature = generate_user_signature(username)
+
+        await blacklist_signatures_storage.create(user_id, old_user_signature)
+        await __class__._update_user_signature(db_session,  old_user_signature, new_user_signature)
+
+        await refresh_token_storage.delete_all(db_session, user_id=user_id)
 
     @staticmethod
     async def _save_login_session_if_not_exists(
@@ -166,5 +191,21 @@ class JWTAuthService(BaseAuthService):
             expires=settings.jwt_access_expire_time_in_seconds
         )
 
+    @staticmethod
+    async def _update_user_signature(
+        db_session: AsyncSession, 
+        old_user_signature: str,
+        new_user_signature: str
+    ):
+        """Update user signature when user terminate all sessions."""
+        statement = update(users_models.UserSignature).where(
+            users_models.UserSignature.signature == old_user_signature
+        ).values({users_models.UserSignature.signature: new_user_signature})
+        await db_session.execute(statement)
+        try:
+            await db_session.commit()
+        except SQLAlchemyError:
+            await db_session.rollback()
+            raise ServiceError()
 
 AuthService = JWTAuthService()

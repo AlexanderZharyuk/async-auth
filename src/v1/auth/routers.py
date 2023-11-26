@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.security import APIKeyCookie
 
-from src.db.postgres import DatabaseSession
-from src.db.postgres import RefreshTokensStorage
+from src.db.postgres import DatabaseSession, RefreshTokensStorage
+from src.db.redis import BlacklistSignatureStorage
 from src.v1.auth.schemas import (TokensResponse, UserCreate, UserLogin,
                                 UserResponse, LogoutResponse, UserLogout)
 from src.v1.auth.service import AuthService
@@ -54,3 +54,25 @@ async def logout(
     )
     return LogoutResponse()
 
+
+@router.post(
+    "/logout_all", 
+    summary="Выход из всех сессий пользователя", 
+    response_model=LogoutResponse
+)
+async def terminate_all_sessions(
+    db_session: DatabaseSession,
+    blacklist_signatures_storage: BlacklistSignatureStorage,
+    refresh_token_storage: RefreshTokensStorage,
+    response: Response,
+    access_token: str | None = Depends(cookie_scheme)
+) -> TokensResponse:
+    """Выход из всех сессий пользователя"""
+    await AuthService.terminate_all_sessions(
+        db_session,
+        blacklist_signatures_storage,
+        refresh_token_storage, 
+        response, 
+        access_token
+    )
+    return LogoutResponse()

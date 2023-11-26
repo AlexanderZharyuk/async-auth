@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     listen_port: int = 8000
     allowed_hosts: list = const.DEFAULT_ALLOWED_HOSTS
 
-    redis_host: str = "redis"
+    redis_host: str = "localhost"
     redis_port: int = 6379
     redis_db: int = 0
 
@@ -41,6 +41,10 @@ class Settings(BaseSettings):
             f"{self.postgres_pwd}@{self.postgres_host}:"
             f"{self.postgres_port}/{self.postgres_db}"
         )
+
+    @cached_property
+    def redis_dsn(self):
+        return f"redis://{self.redis_host}:{self.redis_port}"
 
     class Config:
         case_sensitive = False
