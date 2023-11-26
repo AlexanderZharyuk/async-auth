@@ -102,7 +102,7 @@ class JWTAuthService(BaseAuthService):
 
     @staticmethod
     async def logout(
-        db_sessioon: AsyncSession, 
+        db_session: AsyncSession, 
         refresh_token_storage: RefreshTokensStorage,
         response: Response,
         refresh_token: str
@@ -110,7 +110,7 @@ class JWTAuthService(BaseAuthService):
         """Logout user from current session"""
 
         response.delete_cookie(settings.sessions_cookie_name)
-        await refresh_token_storage.delete(db_sessioon, refresh_token)
+        await refresh_token_storage.delete(db_session, refresh_token)
 
 
     async def verify(current_user=None):
