@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
 from src.db.postgres import RefreshTokensStorage
-from src.v1.auth.exceptions import UserAlreadyExistsError, UserNotFoundError
+from src.v1.auth.exceptions import UserAlreadyExistsError
 from src.v1.auth.helpers import (
     generate_jwt,
     generate_user_signature,
@@ -19,7 +19,9 @@ from src.v1.auth.helpers import (
 )
 from src.v1.auth.schemas import JWTTokens, User, UserCreate, UserLogin
 from src.v1.exceptions import ServiceError
+from src.v1.users.service import UserService
 from src.v1.users import models as users_models
+from src.v1.users.exceptions import UserNotFoundError
 
 
 class BaseAuthService(ABC):
@@ -27,7 +29,8 @@ class BaseAuthService(ABC):
 
     @staticmethod
     async def signup(db_session: AsyncSession, user: UserCreate) -> User:
-        # FIXME(alexander.zharyuk): Refactor this code (get user from user service method)
+        """Register user in system"""
+
         statement = select(users_models.User).filter(
             or_(users_models.User.email == user.email, users_models.User.username == user.username)
         )
@@ -74,12 +77,12 @@ class JWTAuthService(BaseAuthService):
         request: Request,
         response: Response,
     ) -> JWTTokens:
-        # FIXME: Get user from user service method
-        statement = select(users_models.User).where(users_models.User.email == user.email)
-        result = await db_session.execute(statement)
-        if (exists_user := result.scalar()) is None:
-            raise UserNotFoundError()
+        """
+        Login user to service. In response client get pair of JWT-tokens and set client cookie
+        with access token.
+        """
 
+        exists_user = await UserService.get_by_email(db_session, user.email)
         if not verify_password(user.password, exists_user.password):
             raise UserNotFoundError()
 
@@ -109,6 +112,8 @@ class JWTAuthService(BaseAuthService):
     async def _save_login_session_if_not_exists(
         db_session: AsyncSession, user: users_models.User, request: Request
     ):
+        """Save user session if not exists. User sessions identifies by ip and user_agent."""
+
         request_ip = request.client.host
         user_agent = request.headers.get("User-Agent")
 
@@ -122,7 +127,7 @@ class JWTAuthService(BaseAuthService):
         result = await db_session.execute(statement)
         if (exists_login := result.scalar()) is None:
             exists_login = users_models.UserLogin(
-                user_id=user.id, ip=request_ip, user_agent=user_agent
+                user_id=user.id, ip=request_ip, user_agent=user_agent, updated_at=datetime.now()
             )
         else:
             exists_login.updated_at = datetime.now()
@@ -138,6 +143,8 @@ class JWTAuthService(BaseAuthService):
 
     @staticmethod
     async def _set_user_cookie(cookie_key: str, cookie_value: str, response: Response):
+        """Set access token to client cookies."""
+
         response.set_cookie(
             cookie_key,
             cookie_value,

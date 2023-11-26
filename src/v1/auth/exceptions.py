@@ -21,13 +21,13 @@ class UserAlreadyExistsError(HTTPException):
         super().__init__(status_code=status_code, detail=detail)
 
 
-class UserNotFoundError(HTTPException):
-    """Custom error when user not found."""
+class PasswordIncorrectError(HTTPException):
+    """Возвращаемая модель при неправильном пароле."""
 
     def __init__(
         self,
-        status_code: int = status.HTTP_404_NOT_FOUND,
-        message: str = "User with provided credentials doesn't exist.",
+        status_code: int = status.HTTP_401_UNAUTHORIZED,
+        message: str = "Incorrect password.",
     ) -> None:
-        detail = {"code": AuthExceptionCodes.USER_NOT_FOUND, "message": message}
+        detail = {"code": 3001, "message": message}
         super().__init__(status_code=status_code, detail=detail)

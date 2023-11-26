@@ -27,7 +27,7 @@ async def get_user(
     """
     Получение информации о конкретном пользователе.
     """
-    user = await UserService.get(db_session=db_session, user_id=user_id)
+    user = await UserService.get_by_id(db_session=db_session, user_id=user_id)
     return UserResponse(data=UserBase.model_validate(user))
 
 
