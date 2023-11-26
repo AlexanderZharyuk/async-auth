@@ -22,7 +22,7 @@ class RoleUpdate(BaseModel):
 
 
 class SingleRoleResponse(BaseResponseBody):
-    data: RoleBase | dict
+    data: RoleBase | bool
 
 
 class SeveralRolesResponse(BaseResponseBody):

@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class RoleService:
     """Role service depends on PostgreSQL"""
 
-    async def get_role(self, session: AsyncSession, role_id: int) -> Role:
+    async def get_by_id(self, session: AsyncSession, role_id: int) -> Role:
         """Check if the role exists by id"""
         statement = select(Role).where(Role.id == role_id)
         query = await session.execute(statement)
@@ -55,7 +55,7 @@ class RoleService:
             raise ServiceError
 
     async def update(self, session: AsyncSession, role_id: int, data: RoleUpdate) -> RoleBase:
-        await self.get_role(session=session, role_id=role_id)
+        await self.get_by_id(session=session, role_id=role_id)
 
         statement = (
             update(Role)
@@ -77,13 +77,14 @@ class RoleService:
             await session.rollback()
             raise ServiceError
 
-    async def delete(self, session: AsyncSession, role_id: int) -> None:
-        await self.get_role(session=session, role_id=role_id)
+    async def delete(self, session: AsyncSession, role_id: int) -> bool:
+        await self.get_by_id(session=session, role_id=role_id)
 
         try:
             statement = delete(Role).where(Role.id == role_id).returning(Role)
             await session.execute(statement)
             await session.commit()
+            return True
         except exc.SQLAlchemyError as error:
             logger.exception(error)
             await session.rollback()

@@ -107,7 +107,7 @@ class UserRolesService(UserService):
 
     async def add_role(self, session: AsyncSession, user_id: UUID4, data: RoleUser) -> None:
         user = await UserService.get_by_id(db_session=session, user_id=user_id)
-        role = await RoleService.get_role(session=session, role_id=data.role_id)
+        role = await RoleService.get_by_id(session=session, role_id=data.role_id)
 
         try:
             user.roles.append(role)
@@ -123,7 +123,7 @@ class UserRolesService(UserService):
 
     async def delete_role(self, session: AsyncSession, user_id: UUID4, data: RoleUser) -> None:
         user = await UserService.get_by_id(db_session=session, user_id=user_id)
-        role = await RoleService.get_role(session=session, role_id=data.role_id)
+        role = await RoleService.get_by_id(session=session, role_id=data.role_id)
 
         try:
             user.roles.remove(role)

@@ -24,7 +24,7 @@ async def get(db_session: DatabaseSession) -> SeveralRolesResponse:
     "/",
     summary="Создать новую роль.",
     response_model=SingleRoleResponse,
-    status_code=status.HTTP_200_OK,
+    status_code=status.HTTP_201_CREATED,
     description="Создать новую роль.",
 )
 async def create(role: RoleCreate, db_session: DatabaseSession) -> SingleRoleResponse:
@@ -56,5 +56,5 @@ async def update(
 async def delete(
     role_id: Annotated[int, Path(example=127856)], db_session: DatabaseSession
 ) -> SingleRoleResponse:
-    await RoleService.delete(session=db_session, role_id=role_id)
-    return SingleRoleResponse(data={})
+    result = await RoleService.delete(session=db_session, role_id=role_id)
+    return SingleRoleResponse(data=result)
