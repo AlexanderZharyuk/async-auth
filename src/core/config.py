@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     jwt_access_token_cookie_httponly: bool = True
     jwt_access_token_cookie_secure: bool = True
 
+    sessions_cookie_name: str = "access_token"
+
     @cached_property
     def pg_dsn(self):
         return (

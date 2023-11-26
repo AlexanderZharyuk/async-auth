@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from fastapi import Request, Response
-from pydantic import BaseModel
-from sqlalchemy import and_, or_, select
+from pydantic import BaseModel, UUID4
+from sqlalchemy import and_, or_, select, delete
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +16,7 @@ from src.v1.auth.helpers import (
     generate_user_signature,
     hash_password,
     verify_password,
+    decode_jwt
 )
 from src.v1.auth.schemas import JWTTokens, User, UserCreate, UserLogin
 from src.v1.exceptions import ServiceError
@@ -99,8 +100,18 @@ class JWTAuthService(BaseAuthService):
 
         return tokens
 
-    async def logout(db_sessioon: AsyncSession, current_user=None):
-        ...
+    @staticmethod
+    async def logout(
+        db_session: AsyncSession, 
+        refresh_token_storage: RefreshTokensStorage,
+        response: Response,
+        refresh_token: str
+    ):
+        """Logout user from current session"""
+
+        response.delete_cookie(settings.sessions_cookie_name)
+        await refresh_token_storage.delete(db_session, refresh_token)
+
 
     async def verify(current_user=None):
         ...
