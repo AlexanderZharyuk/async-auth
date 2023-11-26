@@ -1,12 +1,20 @@
 from typing import Annotated
 from typing import AsyncGenerator
+from datetime import datetime
 
 from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.exc import SQLAlchemyError
+from jose import jwt
+from pydantic import UUID4
+from sqlalchemy import delete
 
 from src.core.config import settings
-from src.db.storages import Database
+from src.v1.exceptions import ServiceError
+from src.db.storages import Database, BaseStorage
+from src.v1.auth.helpers import decode_jwt
+from src.v1.users.models import UserRefreshTokens
+
 
 
 class PostgresDatabase(Database):
@@ -26,5 +34,49 @@ class PostgresDatabase(Database):
         await self.engine.dispose()
 
 
+class PostgresRefreshTokenStorage(BaseStorage):
+    """Класс для хранения рефреш-токенов в PostgreSQL"""
+
+    @staticmethod
+    async def create(db_session: AsyncSession, refresh_token: str, user_id: UUID4) -> UUID4:
+        token_headers = jwt.get_unverified_header(refresh_token)
+        token_data = decode_jwt(refresh_token)
+        refresh_token = UserRefreshTokens(
+            token=token_headers.get("jti"),
+            user_id=user_id,
+            expire_at=datetime.fromtimestamp(token_data.get("exp")),
+        )
+        db_session.add(refresh_token)
+        try:
+            await db_session.commit()
+        except SQLAlchemyError:
+            await db_session.rollback()
+            raise ServiceError()
+        
+        return refresh_token.token
+
+    @staticmethod
+    async def get(db_session: AsyncSession, token: str) -> UserRefreshTokens:
+        # TODO: Make better
+        return await db_session.get(UserRefreshTokens, token)
+
+    @staticmethod
+    async def delete(db_session: AsyncSession, token: str):
+        # TODO: Make better
+        statement = delete(UserRefreshTokens).where(UserRefreshTokens.token == token)
+        await db_session.execute(statement)
+        await db_session.commit()
+
+    @staticmethod
+    async def delete_all(db_session: AsyncSession, user_id: UUID4):
+        # TODO: Make better
+        statement = delete(UserRefreshTokens).where(UserRefreshTokens.user_id == user_id)
+        await db_session.execute(statement)
+        await db_session.commit()
+
+
 db_session = PostgresDatabase()
+refresh_tokens_storage = PostgresRefreshTokenStorage()
 DatabaseSession = Annotated[AsyncSession, Depends(db_session)]
+RefreshTokensStorage = Annotated[PostgresRefreshTokenStorage, Depends(refresh_tokens_storage)]
+

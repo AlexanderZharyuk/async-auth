@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 from sqlalchemy import UUID, Boolean, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -24,9 +24,12 @@ class User(Base, TimeStampedMixin):
         DateTime(timezone=True), default=None, nullable=True
     )
     signature: Mapped["UserSignature"] = relationship(
-        "UserSignature", uselist=False, back_populates="user"
+        "UserSignature", uselist=False, back_populates="user", lazy="selectin"
     )
     logins: Mapped["UserLogin"] = relationship("UserLogin", back_populates="user", lazy="selectin")
+    refresh_tokens: Mapped["UserRefreshTokens"] = relationship(
+        "UserRefreshTokens", back_populates="user"
+    )    
     roles: Mapped[List["Role"]] = relationship(
         secondary=roles_to_users, back_populates="users", lazy="selectin"
     )
@@ -56,3 +59,15 @@ class UserLogin(Base, TimeStampedMixin):
     user: Mapped[User] = relationship("User", back_populates="logins")
     ip: Mapped[str] = mapped_column(String(120), nullable=False)
     user_agent: Mapped[str] = mapped_column(String(150), nullable=False)
+
+    def __repr__(self) -> str:
+        return f"UserLogin(User: {self.user}, IP: {self.ip}, Time: {self.updated_at})"
+
+
+class UserRefreshTokens(Base, TimeStampedMixin):
+    __tablename__ = "users_refresh_tokens"
+
+    token: Mapped[str] = mapped_column(String(120), nullable=False, index=True, primary_key=True)
+    expire_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    user: Mapped[User] = relationship("User", back_populates="refresh_tokens")

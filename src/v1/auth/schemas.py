@@ -1,5 +1,7 @@
 from pydantic import UUID4, BaseModel, EmailStr, model_validator
 
+from src.schemas import BaseResponseBody
+
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -18,8 +20,26 @@ class UserCreate(UserBase):
         return self
 
 
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
 class User(UserBase):
     id: UUID4
 
     class Config:
         from_attributes = True
+
+
+class UserResponse(BaseResponseBody):
+    data: User
+
+
+class JWTTokens(BaseModel):
+    access_token: str
+    refresh_token: str
+
+
+class TokensResponse(BaseResponseBody):
+    data: JWTTokens
