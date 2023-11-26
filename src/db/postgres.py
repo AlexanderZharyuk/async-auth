@@ -1,10 +1,10 @@
 from typing import Annotated
+from typing import AsyncGenerator
 from datetime import datetime
 
 from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import sessionmaker
 from jose import jwt
 from pydantic import UUID4
 from sqlalchemy import delete
@@ -23,8 +23,10 @@ class PostgresDatabase(Database):
     def __init__(self):
         super().__init__(engine=create_async_engine(settings.pg_dsn, future=True))
 
-    async def __call__(self) -> AsyncSession:
-        async_session = sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
+    async def __call__(self) -> AsyncGenerator[AsyncSession, None]:
+        async_session = async_sessionmaker(
+            self.engine, class_=AsyncSession, expire_on_commit=False
+        )
         async with async_session() as session:
             yield session
 

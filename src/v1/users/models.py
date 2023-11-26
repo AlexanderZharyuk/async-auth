@@ -15,9 +15,9 @@ class User(Base, TimeStampedMixin):
     id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, nullable=False, default=uuid.uuid4
     )
-    username: Mapped[str] = mapped_column(String(100), nullable=False)
+    username: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
     full_name: Mapped[Optional[str]] = mapped_column(String(512), default=None, nullable=True)
-    email: Mapped[str] = mapped_column(String(100), nullable=False)
+    email: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
     password: Mapped[str] = mapped_column(String(), nullable=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
     last_login: Mapped[datetime] = mapped_column(
@@ -26,14 +26,16 @@ class User(Base, TimeStampedMixin):
     signature: Mapped["UserSignature"] = relationship(
         "UserSignature", uselist=False, back_populates="user", lazy="selectin"
     )
-    logins: Mapped["UserLogin"] = relationship("UserLogin", back_populates="user")
+    logins: Mapped["UserLogin"] = relationship("UserLogin", back_populates="user", lazy="selectin")
     refresh_tokens: Mapped["UserRefreshTokens"] = relationship(
         "UserRefreshTokens", back_populates="user"
+    )    
+    roles: Mapped[List["Role"]] = relationship(
+        secondary=roles_to_users, back_populates="users", lazy="selectin"
     )
-    roles: Mapped[List["Role"]] = relationship(secondary=roles_to_users, back_populates="users")
 
     def __repr__(self) -> str:
-        return f"User(id={self.id!r}, login={self.username!r}, name={self.full_name!r}, email={self.email!r})"
+        return f"User(id={self.id!r}, login={self.username!r}, full_name={self.full_name!r}, email={self.email!r})"
 
 
 class UserSignature(Base, TimeStampedMixin):
