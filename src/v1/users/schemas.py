@@ -54,9 +54,17 @@ class UserLoginSchema(BaseModel):
     )
 
 
+class RoleUser(BaseModel):
+    role_id: int = Field(..., examples=["127856"])
+
+
 class UserResponse(BaseResponseBody):
     data: UserBase | dict
 
 
 class UserLoginsResponse(BaseResponseBody):
     data: list[UserLoginSchema]
+
+
+class UserHasRole(BaseResponseBody):
+    data: bool
