@@ -1,12 +1,13 @@
 import hashlib
 from datetime import datetime, timedelta
 
-from jose import jwt
+from jose import jwt, JWTError
 from passlib.hash import pbkdf2_sha256
 from pydantic import UUID4
 
 from src.core.config import settings
 from src.v1.auth.schemas import JWTTokens
+from src.v1.auth.exceptions import InvalidTokenError
 
 
 # TODO(alexander.zharyuk): Improve generation. Maybe add some salt?
@@ -28,6 +29,7 @@ def generate_user_signature(username: str) -> str:
 
 
 def generate_jwt(payload: dict, access_jti: str, refresh_jti: UUID4) -> JWTTokens:
+    """Generate JWT-pair"""
     access_token_expire_date = datetime.now() + timedelta(
         seconds=settings.jwt_access_expire_time_in_seconds
     )
@@ -53,4 +55,13 @@ def generate_jwt(payload: dict, access_jti: str, refresh_jti: UUID4) -> JWTToken
 
 
 def decode_jwt(token: str) -> dict:
-    return jwt.decode(token, key=settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+    """Decode access / refresh tokens payload"""
+    try:
+        payload = jwt.decode(
+            token, 
+            key=settings.jwt_secret_key, 
+            algorithms=[settings.jwt_algorithm]
+        )
+    except JWTError:
+        raise InvalidTokenError()
+    return payload

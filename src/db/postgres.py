@@ -62,17 +62,26 @@ class PostgresRefreshTokenStorage(BaseStorage):
 
     @staticmethod
     async def delete(db_session: AsyncSession, token: str):
-        # TODO: Make better
-        statement = delete(UserRefreshTokens).where(UserRefreshTokens.token == token)
-        await db_session.execute(statement)
-        await db_session.commit()
+        decode_jwt(token)
+        token_headers = jwt.get_unverified_header(token)
+        token_id = token_headers.get("jti")
+        
+        if token_id:
+            statement = delete(UserRefreshTokens).where(UserRefreshTokens.token == token_id)
+            await db_session.execute(statement)
+            try:
+                await db_session.commit()
+            except SQLAlchemyError:
+                await db_session.rollback()
 
     @staticmethod
     async def delete_all(db_session: AsyncSession, user_id: UUID4):
-        # TODO: Make better
         statement = delete(UserRefreshTokens).where(UserRefreshTokens.user_id == user_id)
         await db_session.execute(statement)
-        await db_session.commit()
+        try:
+            await db_session.commit()
+        except SQLAlchemyError:
+            await db_session.rollback()
 
 
 db_session = PostgresDatabase()

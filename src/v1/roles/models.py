@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy import Table, Column, ForeignKey, String
+from sqlalchemy import Column, ForeignKey, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models import Base, TimeStampedMixin
