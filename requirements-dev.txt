@@ -7,3 +7,4 @@ Flake8-pyproject==1.2.3
 pytest==7.4.3
 pytest-asyncio==0.21.1
 faker==20.1.0
+httpx==0.25.2

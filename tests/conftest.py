@@ -2,6 +2,11 @@ import asyncio
 
 import pytest
 
+pytest_plugins = (
+    "tests.fixtures.core",
+    "tests.fixtures.users",
+)
+
 
 @pytest.fixture(scope="session")
 def event_loop():
