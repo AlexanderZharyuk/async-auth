@@ -25,6 +25,10 @@ class UserLogin(BaseModel):
     password: str
 
 
+class UserLogout(BaseModel):
+    refresh_token: str
+
+
 class User(UserBase):
     id: UUID4
 
@@ -43,3 +47,7 @@ class JWTTokens(BaseModel):
 
 class TokensResponse(BaseResponseBody):
     data: JWTTokens
+
+
+class LogoutResponse(BaseResponseBody):
+    data: dict = {"sucess": True}
