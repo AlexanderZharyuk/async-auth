@@ -4,7 +4,8 @@ from fastapi.security import APIKeyCookie
 from src.db.postgres import DatabaseSession, RefreshTokensStorage
 from src.db.redis import BlacklistSignatureStorage
 from src.v1.auth.schemas import (TokensResponse, UserCreate, UserLogin,
-                                UserResponse, LogoutResponse, UserLogout)
+                                UserResponse, LogoutResponse, UserLogout, VerifyTokenResponse,
+                                RefreshTokens)
 from src.v1.auth.service import AuthService
 from src.core.config import settings
 
@@ -37,6 +38,40 @@ async def signin(
     return TokensResponse(data=tokens)
 
 
+@router.post(
+    "/verify", 
+    summary="Верификация переданного access_token", 
+    response_model=VerifyTokenResponse
+)
+async def verify_token(
+    blacklist_signatures_storage: BlacklistSignatureStorage,
+    access_token: str | None = Depends(cookie_scheme)
+) -> VerifyTokenResponse:
+    """Выход из всех сессий пользователя"""
+    return await AuthService.verify(access_token, blacklist_signatures_storage)
+
+
+@router.post(
+    "/refresh", 
+    summary="Выдача новой пары JWT-токенов", 
+    response_model=TokensResponse
+)
+async def refresh_tokens(
+    db_session: DatabaseSession,
+    refresh_token_storage: RefreshTokensStorage,
+    response: Response,
+    data: RefreshTokens,
+) -> TokensResponse:
+    """Выход из всех сессий пользователя"""
+    tokens = await AuthService.refresh_tokens(
+        db_session,
+        refresh_token_storage,
+        response,
+        data.refresh_token
+    )
+    return TokensResponse(data=tokens)
+
+
 @router.post("/logout", summary="Выход из текущей сессии", response_model=LogoutResponse)
 async def logout(
     db_session: DatabaseSession,
@@ -66,7 +101,7 @@ async def terminate_all_sessions(
     refresh_token_storage: RefreshTokensStorage,
     response: Response,
     access_token: str | None = Depends(cookie_scheme)
-) -> TokensResponse:
+) -> LogoutResponse:
     """Выход из всех сессий пользователя"""
     await AuthService.terminate_all_sessions(
         db_session,
