@@ -103,16 +103,16 @@ async def add_role(
 
 
 @router.delete(
-    "/{user_id}/roles",
+    "/{user_id}/roles/{role_id}",
     response_model=UserResponse,
     status_code=status.HTTP_200_OK,
     summary="Отозвать роль у пользователя.",
     description="Отозвать роль у пользователя.",
 )
 async def delete_role(
-    db_session: DatabaseSession, role: RoleUser, user_id: Annotated[UUID4, Path(example=uuid4())]
+    db_session: DatabaseSession, role_id: Annotated[int, Path(example=127856)], user_id: Annotated[UUID4, Path(example=uuid4())]
 ) -> UserResponse:
-    await UserRolesService.delete_role(session=db_session, user_id=user_id, data=role)
+    await UserRolesService.delete_role(session=db_session, user_id=user_id, role_id=role_id)
     return UserResponse(data={})
 
 
@@ -127,6 +127,6 @@ async def has_role(
     db_session: DatabaseSession,
     user_id: Annotated[UUID4, Path(example=uuid4())],
     role_id: Annotated[int, Path(example=127856)],
-) -> SeveralRolesResponse:
+) -> UserHasRole:
     result = await UserRolesService.has_role(session=db_session, user_id=user_id, role_id=role_id)
     return UserHasRole(data=result)

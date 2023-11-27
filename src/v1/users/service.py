@@ -121,9 +121,9 @@ class UserRolesService(UserService):
             raise ServiceError
         return
 
-    async def delete_role(self, session: AsyncSession, user_id: UUID4, data: RoleUser) -> None:
+    async def delete_role(self, session: AsyncSession, user_id: UUID4, role_id: int) -> None:
         user = await UserService.get_by_id(db_session=session, user_id=user_id)
-        role = await RoleService.get_by_id(session=session, role_id=data.role_id)
+        role = await RoleService.get_by_id(session=session, role_id=role_id)
 
         try:
             user.roles.remove(role)

@@ -1,12 +1,11 @@
 import pytest_asyncio
-
 from httpx import AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from src.main import app
-from src.db.postgres import db_session
 from src.core.config import settings
+from src.db.postgres import db_session
+from src.main import app
 from src.models import Base
 
 
@@ -24,7 +23,8 @@ async def db_engine():
         await conn.run_sync(Base.metadata.create_all)
         yield conn
     await engine.dispose()
-    #await delete_database()
+    await delete_database()
+
 
 async def create_database():
     pg_dsn = (
@@ -32,7 +32,9 @@ async def create_database():
         f"{settings.postgres_pwd}@{settings.postgres_host}:"
         f"{settings.postgres_port}/postgres"
     )
-    engine = create_async_engine(pg_dsn, future=True, echo=True).execution_options(isolation_level="AUTOCOMMIT")
+    engine = create_async_engine(pg_dsn, future=True, echo=True).execution_options(
+        isolation_level="AUTOCOMMIT"
+    )
     async with engine.connect() as c:
         async with c.begin():
             await c.execute(text(f"CREATE DATABASE {settings.postgres_db}_test_db;"))
@@ -45,7 +47,9 @@ async def delete_database():
         f"{settings.postgres_pwd}@{settings.postgres_host}:"
         f"{settings.postgres_port}/postgres"
     )
-    engine = create_async_engine(pg_dsn, future=True, echo=True).execution_options(isolation_level="AUTOCOMMIT")
+    engine = create_async_engine(pg_dsn, future=True, echo=True).execution_options(
+        isolation_level="AUTOCOMMIT"
+    )
     async with engine.connect() as c:
         async with c.begin():
             await c.execute(text(f"DROP DATABASE {settings.postgres_db}_test_db;"))
