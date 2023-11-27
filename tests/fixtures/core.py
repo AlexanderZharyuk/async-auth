@@ -24,7 +24,7 @@ async def db_engine():
         await conn.run_sync(Base.metadata.create_all)
         yield conn
     await engine.dispose()
-    await delete_database()
+    #await delete_database()
 
 async def create_database():
     pg_dsn = (

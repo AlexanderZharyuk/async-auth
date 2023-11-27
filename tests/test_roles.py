@@ -19,7 +19,7 @@ async def test_get(api_session: AsyncClient):
 
 @pytest.mark.parametrize("name", ["Tester"])
 @pytest.mark.asyncio
-async def test_create(api_session: AsyncClient, db: AsyncSession, name: STR):
+async def test_create(api_session: AsyncClient, db: AsyncSession, name: str):
     request_data = {
         "name": name
     }
