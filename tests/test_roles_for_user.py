@@ -1,4 +1,6 @@
 import pytest
+
+from http import HTTPStatus
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,7 +15,7 @@ from tests.utils.check_role import check_create_role
 @pytest.mark.asyncio
 async def test_get_user_roles_user_exist(api_session: AsyncClient, id: str):
     response = await api_session.get(f"/api/v1/users/{id}/roles")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert SeveralRolesResponse.model_validate(response.json())
 
 
@@ -21,7 +23,7 @@ async def test_get_user_roles_user_exist(api_session: AsyncClient, id: str):
 @pytest.mark.asyncio
 async def test_get_roles_user_not_exist(api_session: AsyncClient, id: str):
     response = await api_session.get(f"/api/v1/users/{id}/roles")
-    assert response.status_code == 404
+    assert response.status_code == HTTPStatus.NOT_FOUND
     assert UserNotFoundError(response.json())
 
 
@@ -33,7 +35,7 @@ async def test_add_role_to_user_success(
     request_data = {"role_id": role_id}
     response = await api_session.post(f"/api/v1/users/{user_id}/roles", json=request_data)
     role = await check_create_role(db=db, user_id=user_id, role_id=role_id)
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert UserResponse.model_validate(response.json())
     assert role is not None
 
@@ -46,7 +48,7 @@ async def test_add_user_role_user_not_exist(
     request_data = {"role_id": role_id}
     response = await api_session.post(f"/api/v1/users/{user_id}/roles", json=request_data)
     role = await check_create_role(db=db, user_id=user_id, role_id=role_id)
-    assert response.status_code == 404
+    assert response.status_code == HTTPStatus.NOT_FOUND
     assert UserNotFoundError(response.json())
     assert role is None
 
@@ -59,7 +61,7 @@ async def test_add_user_role_role_not_exist(
     request_data = {"role_id": role_id}
     response = await api_session.post(f"/api/v1/users/{user_id}/roles", json=request_data)
     role = await check_create_role(db=db, user_id=user_id, role_id=role_id)
-    assert response.status_code == 404
+    assert response.status_code == HTTPStatus.NOT_FOUND
     assert RoleNotFound(response.json())
     assert role is None
 
@@ -72,7 +74,7 @@ async def test_add_user_role_role_already_exist(
     request_data = {"role_id": role_id}
     response = await api_session.post(f"/api/v1/users/{user_id}/roles", json=request_data)
     role = await check_create_role(db=db, user_id=user_id, role_id=role_id)
-    assert response.status_code == 400
+    assert response.status_code == HTTPStatus.BAD_REQUEST
     assert RoleAlreadyExistsError(response.json())
     assert role is None
 
@@ -84,7 +86,7 @@ async def test_delete_user_role_success(
 ):
     response = await api_session.delete(f"/api/v1/users/{user_id}/roles/{role_id}")
     role = await check_create_role(db=db, user_id=user_id, role_id=role_id)
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert UserResponse.model_validate(response.json())
     assert role is None
 
@@ -92,10 +94,10 @@ async def test_delete_user_role_success(
 @pytest.mark.parametrize("user_id, role_id", [("e460707d-4ff9-4e75-a0d7-1a02ae7db45f", 96608)])
 @pytest.mark.asyncio
 async def test_delete_user_role_user_not_exist(
-    api_session: AsyncClient, db: AsyncSession, user_id: str, role_id: int
+    api_session: AsyncClient, user_id: str, role_id: int
 ):
     response = await api_session.delete(f"/api/v1/users/{user_id}/roles/{role_id}")
-    assert response.status_code == 404
+    assert response.status_code == HTTPStatus.NOT_FOUND
     assert UserNotFoundError(response.json())
 
 
@@ -105,7 +107,7 @@ async def test_delete_user_role_role_not_exist(
     api_session: AsyncClient, user_id: str, role_id: int
 ):
     response = await api_session.delete(f"/api/v1/users/{user_id}/roles/{role_id}")
-    assert response.status_code == 404
+    assert response.status_code == HTTPStatus.NOT_FOUND
     assert RoleNotFound(response.json())
 
 
@@ -113,7 +115,7 @@ async def test_delete_user_role_role_not_exist(
 @pytest.mark.asyncio
 async def test_user_has_role_success(api_session: AsyncClient, user_id: str, role_id: int):
     response = await api_session.get(f"/api/v1/users/{user_id}/roles/{role_id}")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert UserHasRole.model_validate(response.json())
 
 
@@ -121,5 +123,5 @@ async def test_user_has_role_success(api_session: AsyncClient, user_id: str, rol
 @pytest.mark.asyncio
 async def test_user_has_role_user_not_exist(api_session: AsyncClient, user_id: str, role_id: int):
     response = await api_session.get(f"/api/v1/users/{user_id}/roles/{role_id}")
-    assert response.status_code == 404
+    assert response.status_code == HTTPStatus.NOT_FOUND
     assert UserNotFoundError(response.json())
