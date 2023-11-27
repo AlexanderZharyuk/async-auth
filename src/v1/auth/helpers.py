@@ -8,7 +8,7 @@ from pydantic import UUID4
 from src.db.redis import BlacklistSignatureStorage
 from src.core.config import settings
 from src.v1.auth.schemas import JWTTokens
-from src.v1.auth.exceptions import InvalidTokenError, UnauthorizedError
+from src.v1.auth.exceptions import UnauthorizedError, InvalidTokenError
 
 
 # TODO(alexander.zharyuk): Improve generation. Maybe add some salt?
@@ -57,20 +57,19 @@ def generate_jwt(payload: dict, access_jti: str, refresh_jti: UUID4) -> JWTToken
 
 def decode_jwt(token: str) -> dict:
     """Decode access / refresh tokens payload"""
-    try:
-        payload = jwt.decode(
+    return jwt.decode(
             token, 
             key=settings.jwt_secret_key, 
             algorithms=[settings.jwt_algorithm]
         )
-    except JWTError:
-        raise InvalidTokenError()
-    return payload
 
 
 async def validate_jwt(blacklist_tokens_storage: BlacklistSignatureStorage, token: str):
     """Validate that token is not in blacklists"""
-    token_payload = decode_jwt(token)
+    try:
+        token_payload = decode_jwt(token)
+    except JWTError:
+        raise InvalidTokenError()
     token_headers = jwt.get_unverified_header(token)
 
     user_id = token_payload.get("user_id")

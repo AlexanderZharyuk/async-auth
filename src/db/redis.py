@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from aioredis import Redis, from_url
+from redis.asyncio import Redis, from_url
 from pydantic import UUID4
 from fastapi import Depends
 
@@ -11,7 +11,11 @@ from src.core.config import settings
 class RedisBlacklistUserSignatureStorage(BaseStorage):
 
     def __init__(self) -> None:
-        self.protocol: Redis = from_url(settings.redis_dsn, decode_responses=True)
+        self.protocol: Redis = from_url(
+            settings.redis_dsn, 
+            decode_responses=True, 
+            db=settings.redis_db
+        )
         self.namespace: str = "auth_service"
 
     async def create(self, user_id: UUID4, signature: str):

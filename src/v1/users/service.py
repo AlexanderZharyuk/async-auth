@@ -22,7 +22,7 @@ class UserService:
     async def get_by_email(db_session: AsyncSession, email: EmailStr) -> Type[User]:
         statement = select(User).where(User.email == email)
         result = await db_session.execute(statement)
-        if (exists_user := result.scalar_one()) is None:
+        if (exists_user := result.scalar()) is None:
             raise UserNotFoundError()
         return exists_user
 
