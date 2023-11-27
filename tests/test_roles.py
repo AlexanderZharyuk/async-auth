@@ -32,7 +32,7 @@ async def test_create(api_session: AsyncClient, db: AsyncSession, name: str):
     role = query.scalar_one_or_none()
     assert response.status_code == 201
     assert SingleRoleResponse.model_validate(response.json())
-    assert role != None
+    assert role is not None
 
 
 @pytest.mark.parametrize("name", ["Tester"])
@@ -66,7 +66,7 @@ async def test_update(api_session: AsyncClient, db: AsyncSession, id: int, name:
     role = query.scalar_one_or_none()
     assert response.status_code == 200
     assert SingleRoleResponse.model_validate(response.json())
-    assert role != None
+    assert role is not None
 
 
 @pytest.mark.parametrize("id, name", [(96620, "Tester")])
@@ -89,7 +89,7 @@ async def test_delete(api_session: AsyncClient, db: AsyncSession, id: int):
     response = await api_session.delete(f"/api/v1/roles/{id}")
     role = await db.get(Role, id)
     assert response.status_code == 200
-    assert role == None
+    assert role is None
 
 
 @pytest.mark.parametrize("id", [96620])
