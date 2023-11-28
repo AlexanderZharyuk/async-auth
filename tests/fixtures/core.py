@@ -18,7 +18,7 @@ async def db_engine():
         f"{settings.postgres_db}_test_db"
     )
     await create_database()
-    engine = create_async_engine(pg_dsn, future=True, echo=True)
+    engine = create_async_engine(pg_dsn, future=True)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         yield conn
@@ -32,7 +32,7 @@ async def create_database():
         f"{settings.postgres_pwd}@{settings.postgres_host}:"
         f"{settings.postgres_port}/postgres"
     )
-    engine = create_async_engine(pg_dsn, future=True, echo=True).execution_options(
+    engine = create_async_engine(pg_dsn, future=True).execution_options(
         isolation_level="AUTOCOMMIT"
     )
     async with engine.connect() as c:
@@ -47,7 +47,7 @@ async def delete_database():
         f"{settings.postgres_pwd}@{settings.postgres_host}:"
         f"{settings.postgres_port}/postgres"
     )
-    engine = create_async_engine(pg_dsn, future=True, echo=True).execution_options(
+    engine = create_async_engine(pg_dsn, future=True).execution_options(
         isolation_level="AUTOCOMMIT"
     )
     async with engine.connect() as c:
