@@ -1,14 +1,34 @@
+import uuid
+
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncSession
+from faker import Faker
 
-from src.v1.roles.service import RoleService
-from src.v1.users.service import UserService
+from src.v1.auth.helpers import hash_password
+from src.v1.roles.models import Role
+from src.v1.users.models import User
 
-data = {"user_id": "c94e5b5d-7992-466e-bebe-da86d6ddfa82", "role_id": 96606}
+fake = Faker()
+
+role_user_password = fake.password()
+role_user_data = {
+    "id": str(uuid.uuid4()),
+    "username": fake.profile(fields=["username"])["username"],
+    "full_name": fake.name(),
+    "email": fake.email(),
+    "password": hash_password(role_user_password),
+}
+
+role_to_user = {"id": 99000, "name": "RoleTest"}
+
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
-async def create_test_role_to_users(db: AsyncSession):
-    user = await UserService.get_by_id(db_session=db, user_id=data.get("user_id"))
-    role = await RoleService.get_by_id(session=db, role_id=data.get("role_id"))
-    user.roles.append(role)
+async def load_data_roles_to_users(db):
+    user = User(**role_user_data)
+    db.add(user)
     await db.commit()
+    await db.refresh(user)
+
+    user_role = Role(**role_to_user)
+    db.add(user_role)
+    await db.commit()
+    await db.refresh(user_role)
