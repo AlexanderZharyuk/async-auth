@@ -29,6 +29,10 @@ class UserLogout(BaseModel):
     refresh_token: str
 
 
+class RefreshTokens(UserLogout):
+    ...
+
+
 class User(UserBase):
     id: UUID4
 
@@ -51,3 +55,11 @@ class TokensResponse(BaseResponseBody):
 
 class LogoutResponse(BaseResponseBody):
     data: dict = {"sucess": True}
+
+
+class VerifyTokenResponse(BaseResponseBody):
+    data: dict = {"access": True}
+
+
+class JWTPayload(BaseModel):
+    user_id: UUID4
