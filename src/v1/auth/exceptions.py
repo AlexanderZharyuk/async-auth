@@ -10,6 +10,7 @@ class AuthExceptionCodes:
     USER_UNAUTHORIZED: int = 3002
     PROVIDED_PASSWORD_INCORRECT: int = 3003
     INVALID_PROVIDED_TOKEN: int = 3004
+    TOKEN_NOT_FOUND: int = 3005
 
 
 class UserAlreadyExistsError(HTTPException):
@@ -57,4 +58,16 @@ class InvalidTokenError(HTTPException):
         message: str = "Invalid token.",
     ) -> None:
         detail = {"code": AuthExceptionCodes.INVALID_PROVIDED_TOKEN, "message": message}
+        super().__init__(status_code=status_code, detail=detail)
+
+
+class TokenNotFoundError(HTTPException):
+    """Error raised whe token doesnt exists in DB."""
+
+    def __init__(
+        self,
+        status_code: int = status.HTTP_404_NOT_FOUND,
+        message: str = "Invalid token.",
+    ) -> None:
+        detail = {"code": AuthExceptionCodes.TOKEN_NOT_FOUND, "message": message}
         super().__init__(status_code=status_code, detail=detail)

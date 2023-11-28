@@ -4,21 +4,27 @@ from datetime import datetime
 
 from fastapi import Request, Response
 from pydantic import BaseModel, UUID4
-from sqlalchemy import and_, or_, select, delete
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from jose import jwt, JWTError
 
 from src.core.config import settings
 from src.db.postgres import RefreshTokensStorage
-from src.v1.auth.exceptions import UserAlreadyExistsError
+from src.v1.auth.exceptions import (
+    UserAlreadyExistsError, UnauthorizedError, TokenNotFoundError, InvalidTokenError
+)
 from src.v1.auth.helpers import (
     generate_jwt,
     generate_user_signature,
     hash_password,
     verify_password,
-    decode_jwt
+    decode_jwt,
+    validate_jwt
 )
-from src.v1.auth.schemas import JWTTokens, User, UserCreate, UserLogin
+from src.v1.auth.schemas import (JWTTokens, User, UserCreate, UserLogin, 
+                                 VerifyTokenResponse, JWTPayload)
+from src.db.redis import BlacklistSignatureStorage
 from src.v1.exceptions import ServiceError
 from src.v1.users.service import UserService
 from src.v1.users import models as users_models
@@ -90,8 +96,9 @@ class JWTAuthService(BaseAuthService):
         await __class__._save_login_session_if_not_exists(db_session, exists_user, request)
 
         # TODO: Add role to JWT
+        jwt_payload = JWTPayload(user_id=exists_user.id).model_dump(mode="json")
         tokens = generate_jwt(
-            payload={"user_id": str(exists_user.id)},
+            payload=jwt_payload,
             access_jti=exists_user.signature.signature,
             refresh_jti=uuid.uuid4(),
         )
@@ -112,12 +119,83 @@ class JWTAuthService(BaseAuthService):
         response.delete_cookie(settings.sessions_cookie_name)
         await refresh_token_storage.delete(db_session, refresh_token)
 
+    @staticmethod
+    async def verify(access_token: str, blacklist_signatures_storage: BlacklistSignatureStorage):
+        """Verfiy that provided access token is not blacklist"""
+        try:
+            await validate_jwt(blacklist_signatures_storage, access_token)
+            data={"access": True}
+        except UnauthorizedError:
+            data = {"access": False}
+        return VerifyTokenResponse(data=data)
 
-    async def verify(current_user=None):
-        ...
+    @staticmethod
+    async def terminate_all_sessions(
+        db_session: AsyncSession,
+        blacklist_signatures_storage: BlacklistSignatureStorage,
+        refresh_token_storage: RefreshTokensStorage,
+        response: Response,
+        access_token: str
+    ):
+        """Terminate all sessions"""
 
-    async def terminate_all_sessions(current_user=None):
-        ...
+        await validate_jwt(blacklist_signatures_storage, access_token)
+        response.delete_cookie(settings.sessions_cookie_name)
+        try:
+            token_payload = decode_jwt(access_token)
+        except JWTError:
+            raise InvalidTokenError()
+        
+        token_headers = jwt.get_unverified_header(access_token)
+        
+        user_id = token_payload.get("user_id")
+        old_user_signature = token_headers.get("jti")
+
+        await blacklist_signatures_storage.create(user_id, old_user_signature)
+        await __class__._update_user_signature(db_session,  user_id, old_user_signature)
+
+        await refresh_token_storage.delete_all(db_session, user_id=user_id)
+
+    @staticmethod
+    async def refresh_tokens(
+        db_session: AsyncSession, 
+        refresh_token_storage: RefreshTokensStorage,
+        response: Response,
+        refresh_token: str
+    ):
+        """Regenerate JWT pair of tokens"""
+
+        try:
+            decode_jwt(refresh_token)
+        except JWTError:
+            raise InvalidTokenError()
+        
+        refresh_token_headers = jwt.get_unverified_header(refresh_token)
+        refresh_jti = refresh_token_headers.get("jti")
+        statement = select(users_models.UserRefreshTokens).where(
+            users_models.UserRefreshTokens.token == refresh_jti
+        )
+        result = await db_session.execute(statement)
+        if (token := result.scalar()) is None:
+            raise TokenNotFoundError()
+
+        user = await UserService.get_by_id(db_session, token.user_id)
+        await refresh_token_storage.delete(db_session, refresh_token)
+
+        jwt_payload = JWTPayload(user_id=user.id).model_dump(mode="json")
+        tokens = generate_jwt(
+            payload=jwt_payload,
+            access_jti=user.signature.signature,
+            refresh_jti=str(uuid.uuid4()),
+        )
+        await refresh_token_storage.create(db_session, tokens.refresh_token, user.id)
+        await __class__._set_user_cookie(
+            settings.sessions_cookie_name, 
+            tokens.access_token, 
+            response
+        )
+        return tokens
+
 
     @staticmethod
     async def _save_login_session_if_not_exists(
@@ -165,6 +243,26 @@ class JWTAuthService(BaseAuthService):
             max_age=settings.jwt_access_expire_time_in_seconds,
             expires=settings.jwt_access_expire_time_in_seconds
         )
+
+    @staticmethod
+    async def _update_user_signature(
+        db_session: AsyncSession,
+        user_id: UUID4,
+        old_user_signature: str
+    ):
+        """Update user signature when user terminate all sessions."""
+        user = await UserService.get_by_id(db_session, user_id)
+        new_user_signature = generate_user_signature(user.username)
+
+        statement = update(users_models.UserSignature)\
+        .where(users_models.UserSignature.signature == old_user_signature)\
+        .values({users_models.UserSignature.signature: new_user_signature})
+        await db_session.execute(statement)
+        try:
+            await db_session.commit()
+        except SQLAlchemyError:
+            await db_session.rollback()
+            raise ServiceError()
 
 
 AuthService = JWTAuthService()

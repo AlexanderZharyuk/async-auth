@@ -5,8 +5,8 @@ from typing import Optional, List
 from pydantic import UUID4, BaseModel, Field, EmailStr, IPvAnyAddress, model_validator, ConfigDict
 
 from src.schemas import BaseResponseBody
-
-# from src.v1.roles.schemas import RoleBase
+from src.v1.roles.schemas import RoleBase
+from src.v1.users.exceptions import PasswordsDoNotMatch
 
 
 class UserBase(BaseModel):
@@ -19,8 +19,9 @@ class UserBase(BaseModel):
     created_at: datetime = Field(..., examples=["2032-04-23T10:20:30.400+02:30"])
     updated_at: datetime | None = Field(..., examples=["2032-04-23T10:20:30.400+02:30"])
     last_login: datetime | None = Field(..., examples=["2032-04-23T10:20:30.400+02:30"])
-    # ToDo: add roles after implementing roles
-    # roles: Optional[List[RoleBase]] = Field(default=[], examples=[{"id": 1, "name": "Administrator"}])
+    roles: Optional[List[RoleBase]] = Field(
+        default=[], examples=[{"id": 1, "name": "Administrator"}]
+    )
 
 
 class UserUpdate(BaseModel):
@@ -35,7 +36,7 @@ class UserUpdate(BaseModel):
     def validate_params(self) -> "UserUpdate":
         if self.password:
             if self.password != self.repeat_password:
-                raise ValueError("Passwords do not match")
+                raise PasswordsDoNotMatch()
         return self
 
 

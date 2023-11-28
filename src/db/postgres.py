@@ -5,12 +5,13 @@ from datetime import datetime
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.exc import SQLAlchemyError
-from jose import jwt
+from jose import jwt, JWTError
 from pydantic import UUID4
 from sqlalchemy import delete
 
 from src.core.config import settings
 from src.v1.exceptions import ServiceError
+from src.v1.auth.exceptions import InvalidTokenError
 from src.db.storages import Database, BaseStorage
 from src.v1.auth.helpers import decode_jwt
 from src.v1.users.models import UserRefreshTokens
@@ -40,11 +41,15 @@ class PostgresRefreshTokenStorage(BaseStorage):
     @staticmethod
     async def create(db_session: AsyncSession, refresh_token: str, user_id: UUID4) -> UUID4:
         token_headers = jwt.get_unverified_header(refresh_token)
-        token_data = decode_jwt(refresh_token)
+        try:
+            token_payload = decode_jwt(refresh_token)
+            await __class__._verify_that_token_is_refresh(token_payload)
+        except JWTError:
+            raise InvalidTokenError()
         refresh_token = UserRefreshTokens(
             token=token_headers.get("jti"),
             user_id=user_id,
-            expire_at=datetime.fromtimestamp(token_data.get("exp")),
+            expire_at=datetime.fromtimestamp(token_payload.get("exp")),
         )
         db_session.add(refresh_token)
         try:
@@ -62,7 +67,12 @@ class PostgresRefreshTokenStorage(BaseStorage):
 
     @staticmethod
     async def delete(db_session: AsyncSession, token: str):
-        decode_jwt(token)
+        try:
+            token_payload = decode_jwt(token)
+            await __class__._verify_that_token_is_refresh(token_payload)
+        except JWTError:
+            raise InvalidTokenError()
+        
         token_headers = jwt.get_unverified_header(token)
         token_id = token_headers.get("jti")
         
@@ -82,6 +92,11 @@ class PostgresRefreshTokenStorage(BaseStorage):
             await db_session.commit()
         except SQLAlchemyError:
             await db_session.rollback()
+
+    @staticmethod
+    async def _verify_that_token_is_refresh(token_payload: dict):
+        if len(token_payload.values()) > 1:
+            raise JWTError()
 
 
 db_session = PostgresDatabase()

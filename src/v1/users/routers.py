@@ -63,8 +63,8 @@ async def update_user(
 async def get_user_login_history(
     db_session: DatabaseSession,
     user_id: Annotated[UUID4, Path(examples=[uuid4()])],
-    page: Annotated[int, Query(examples=[1])],
-    per_page: Annotated[int, Query(examples=[10])],
+    page: Annotated[int, Query(examples=[1], ge=1)] = 1,
+    per_page: Annotated[int, Query(examples=[10], ge=1)] = 10,
 ) -> UserLoginsResponse:
     """
     Получение списка последних логинов пользователя.

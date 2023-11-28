@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.v1.auth.exceptions import PasswordIncorrectError
 from src.v1.auth.helpers import hash_password, verify_password
 from src.v1.exceptions import ServiceError
-from src.v1.users.exceptions import UserNotFoundError, UserParamsAlreadyOccupied, RoleAlreadyEssignedError
+from src.v1.users.exceptions import UserNotFoundError, UserParamsAlreadyOccupied, RoleAlreadyAssignedError
 from src.v1.users.models import User, UserLogin
 from src.v1.users.schemas import UserBase, UserUpdate, UserLoginSchema, RoleUser
 from src.v1.roles.service import RoleService
@@ -25,7 +25,7 @@ class UserService:
     async def get_by_email(db_session: AsyncSession, email: EmailStr) -> Type[User]:
         statement = select(User).where(User.email == email)
         result = await db_session.execute(statement)
-        if (exists_user := result.scalar_one()) is None:
+        if (exists_user := result.scalar()) is None:
             raise UserNotFoundError()
         return exists_user
 
@@ -80,7 +80,7 @@ class UserService:
     async def get_user_login_history(
         db_session: AsyncSession, user_id: UUID4, page: int = 1, per_page: int = 50
     ) -> List[UserLoginSchema]:
-        limit = per_page * page
+        limit = per_page
         offset = (page - 1) * per_page
         user = await __class__.get_by_id(db_session=db_session, user_id=user_id)
         logins = await db_session.execute(
@@ -90,7 +90,7 @@ class UserService:
             .limit(limit)
             .order_by(UserLogin.created_at)
         )
-        return [UserLoginSchema.model_validate(login) for login in logins.scalars().all()]
+        return [UserLoginSchema.model_validate(login) for login in logins.scalars()]
 
 class UserRolesService(UserService):
     """Managing user roles service depends on PostgreSQL"""
@@ -114,7 +114,7 @@ class UserRolesService(UserService):
             await session.commit()
         except IntegrityError:
             await session.rollback()
-            raise RoleAlreadyEssignedError
+            raise RoleAlreadyAssignedError
         except SQLAlchemyError as exc:
             logger.exception(exc)
             await session.rollback()
