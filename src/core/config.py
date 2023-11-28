@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_db: int = 0
 
-    postgres_host: str = "localhost"
+    postgres_host: str = "db"
     postgres_port: int = 5432
     postgres_db: str = "auth_db"
     postgres_user: str = "app"
