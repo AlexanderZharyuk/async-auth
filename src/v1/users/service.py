@@ -3,24 +3,27 @@ from typing import List, Type
 
 from pydantic import UUID4, EmailStr
 from sqlalchemy import select, or_
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.v1.auth.exceptions import PasswordIncorrectError
 from src.v1.auth.helpers import hash_password, verify_password
 from src.v1.exceptions import ServiceError
-from src.v1.users.exceptions import UserNotFoundError, UserParamsAlreadyOccupied, RoleAlreadyAssignedError
-from src.v1.users.models import User, UserLogin
-from src.v1.users.schemas import UserBase, UserUpdate, UserLoginSchema, RoleUser
-from src.v1.roles.service import RoleService
 from src.v1.roles.models import Role, roles_to_users
 from src.v1.roles.schemas import RoleBase
+from src.v1.roles.service import RoleService
+from src.v1.users.exceptions import (
+    UserNotFoundError,
+    UserParamsAlreadyOccupied,
+    RoleAlreadyAssignedError,
+)
+from src.v1.users.models import User, UserLogin
+from src.v1.users.schemas import UserBase, UserUpdate, UserLoginSchema, RoleUser
 
 logger = logging.getLogger(__name__)
 
 
 class UserService:
-
     @staticmethod
     async def get_by_email(db_session: AsyncSession, email: EmailStr) -> Type[User]:
         statement = select(User).where(User.email == email)
@@ -92,6 +95,7 @@ class UserService:
         )
         return [UserLoginSchema.model_validate(login) for login in logins.scalars()]
 
+
 class UserRolesService(UserService):
     """Managing user roles service depends on PostgreSQL"""
 
@@ -109,12 +113,12 @@ class UserRolesService(UserService):
         user = await UserService.get_by_id(db_session=session, user_id=user_id)
         role = await RoleService.get_by_id(session=session, role_id=data.role_id)
 
+        if role in user.roles:
+            raise RoleAlreadyAssignedError
+
         try:
             user.roles.append(role)
             await session.commit()
-        except IntegrityError:
-            await session.rollback()
-            raise RoleAlreadyAssignedError
         except SQLAlchemyError as exc:
             logger.exception(exc)
             await session.rollback()
@@ -148,5 +152,6 @@ class UserRolesService(UserService):
         query = await session.execute(statement)
         result = query.scalars().first()
         return result is not None
+
 
 UserRolesService = UserRolesService()

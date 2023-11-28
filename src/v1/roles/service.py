@@ -51,7 +51,7 @@ class RoleService:
             return RoleBase.model_validate(role)
         except exc.SQLAlchemyError as error:
             logger.exception(error)
-            await session.rolback()
+            await session.rollback()
             raise ServiceError
 
     async def update(self, session: AsyncSession, role_id: int, data: RoleUpdate) -> RoleBase:
