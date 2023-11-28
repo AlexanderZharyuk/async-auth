@@ -11,7 +11,7 @@ fake = Faker()
 
 user_password = fake.password()
 user_data = {
-    "id": str(uuid.uuid4()),
+    "id": "c94e5b5d-7992-466e-bebe-da86d6ddfa82",
     "username": fake.profile(fields=["username"])["username"],
     "full_name": fake.name(),
     "email": fake.email(),

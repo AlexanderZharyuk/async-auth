@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from fastapi import Request, Response
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel, UUID4, ValidationError
 from sqlalchemy import and_, or_, select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -124,8 +124,10 @@ class JWTAuthService(BaseAuthService):
         """Verfiy that provided access token is not blacklist"""
         try:
             await validate_jwt(blacklist_signatures_storage, access_token)
+            token_payload = decode_jwt(access_token)
+            JWTPayload(**token_payload)
             data={"access": True}
-        except UnauthorizedError:
+        except (UnauthorizedError, ValidationError):
             data = {"access": False}
         return VerifyTokenResponse(data=data)
 

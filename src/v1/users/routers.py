@@ -82,7 +82,7 @@ async def get_user_login_history(
     description="Получить список ролей пользователя.",
 )
 async def get_roles(
-    db_session: DatabaseSession, user_id: Annotated[UUID4, Path(example=uuid4())]
+    db_session: DatabaseSession, user_id: Annotated[UUID4, Path(examples=uuid4())]
 ) -> SeveralRolesResponse:
     roles = await UserRolesService.get_roles(session=db_session, user_id=user_id)
     return SeveralRolesResponse(data=roles)
@@ -96,7 +96,7 @@ async def get_roles(
     description="Назначить роль пользователю.",
 )
 async def add_role(
-    db_session: DatabaseSession, role: RoleUser, user_id: Annotated[UUID4, Path(example=uuid4())]
+    db_session: DatabaseSession, role: RoleUser, user_id: Annotated[UUID4, Path(examples=uuid4())]
 ) -> UserResponse:
     await UserRolesService.add_role(session=db_session, user_id=user_id, data=role)
     return UserResponse(data={})
@@ -110,7 +110,9 @@ async def add_role(
     description="Отозвать роль у пользователя.",
 )
 async def delete_role(
-    db_session: DatabaseSession, role_id: Annotated[int, Path(example=127856)], user_id: Annotated[UUID4, Path(example=uuid4())]
+    db_session: DatabaseSession, 
+    role_id: Annotated[int, Path(examples=127856)], 
+    user_id: Annotated[UUID4, Path(examples=uuid4())]
 ) -> UserResponse:
     await UserRolesService.delete_role(session=db_session, user_id=user_id, role_id=role_id)
     return UserResponse(data={})
@@ -125,8 +127,8 @@ async def delete_role(
 )
 async def has_role(
     db_session: DatabaseSession,
-    user_id: Annotated[UUID4, Path(example=uuid4())],
-    role_id: Annotated[int, Path(example=127856)],
+    user_id: Annotated[UUID4, Path(examples=uuid4())],
+    role_id: Annotated[int, Path(examples=127856)],
 ) -> UserHasRole:
     result = await UserRolesService.has_role(session=db_session, user_id=user_id, role_id=role_id)
     return UserHasRole(data=result)
