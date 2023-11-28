@@ -1,10 +1,11 @@
 import asyncio
-import pytest
+
 
 pytest_plugins = (
     "tests.fixtures.core",
-    "tests.fixtures.roles",
     "tests.fixtures.users",
+    "tests.fixtures.roles",
+    "tests.fixtures.roles_to_users",
 )
 
 
