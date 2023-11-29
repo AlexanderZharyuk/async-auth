@@ -1,4 +1,4 @@
-version: '3'
+version: '3.4'
 
 services:
   db:
@@ -37,19 +37,16 @@ services:
     user: nginx:nginx
     depends_on:
       api:
-        condition: service_healthy
+        condition: service_started
 
   api:
+    build:
+      context: ./
+      target: dev
     restart: always
     image: auth_api:${TAG:-latest}
     env_file:
       - .env
-    command: [ "start" ]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://api:8000/api/v1/healthcheck/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     depends_on:
       db:
         condition: service_healthy
