@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Path, status
+from fastapi import APIRouter, Path, status, Depends
 from typing_extensions import Annotated
 
+from src.v1.users.models import User
+from src.v1.dependencies import require_roles
 from src.db.postgres import DatabaseSession
 from src.v1.roles.schemas import RoleCreate, RoleUpdate, SeveralRolesResponse, SingleRoleResponse
 from src.v1.roles.service import RoleService
+from src.v1.roles.constants import RolesChoices
 
 router = APIRouter(prefix="/roles", tags=["Роли"])
 
@@ -27,7 +30,11 @@ async def get(db_session: DatabaseSession) -> SeveralRolesResponse:
     status_code=status.HTTP_201_CREATED,
     description="Создать новую роль.",
 )
-async def create(role: RoleCreate, db_session: DatabaseSession) -> SingleRoleResponse:
+async def create(
+    role: RoleCreate, 
+    db_session: DatabaseSession, 
+    current_user: User = Depends(require_roles([RolesChoices.ADMIN]))
+) -> SingleRoleResponse:
     role = await RoleService.create(session=db_session, data=role)
     return SingleRoleResponse(data=role)
 
@@ -40,7 +47,10 @@ async def create(role: RoleCreate, db_session: DatabaseSession) -> SingleRoleRes
     description="Редактировать роль.",
 )
 async def update(
-    role: RoleUpdate, role_id: Annotated[int, Path(example=127856)], db_session: DatabaseSession
+    role: RoleUpdate, 
+    role_id: Annotated[int, Path(example=127856)], 
+    db_session: DatabaseSession,
+    current_user: User = Depends(require_roles([RolesChoices.ADMIN]))
 ) -> SingleRoleResponse:
     role = await RoleService.update(session=db_session, role_id=role_id, data=role)
     return SingleRoleResponse(data=role)
@@ -54,7 +64,9 @@ async def update(
     description="Удалить роль.",
 )
 async def delete(
-    role_id: Annotated[int, Path(example=127856)], db_session: DatabaseSession
+    role_id: Annotated[int, Path(example=127856)], 
+    db_session: DatabaseSession,
+    current_user: User = Depends(require_roles([RolesChoices.ADMIN]))
 ) -> SingleRoleResponse:
     result = await RoleService.delete(session=db_session, role_id=role_id)
     return SingleRoleResponse(data=result)
