@@ -48,8 +48,9 @@ class BaseAuthService(ABC):
         user = users_models.User(
             id=uuid.uuid4(),
             **user.model_dump(exclude={"password", "repeat_password", "id"}),
-            password=hash_password(user.password),
+            password=hash_password(user.password)
         )
+        await user.set_default_role(db_session)
         user_signature = users_models.UserSignature(
             signature=generate_user_signature(user.username), user_id=user.id
         )
@@ -93,10 +94,11 @@ class JWTAuthService(BaseAuthService):
         if not verify_password(user.password, exists_user.password):
             raise UserNotFoundError()
 
-        await __class__._save_login_session_if_not_exists(db_session, exists_user, request)
+        await __class__._save_login_session(db_session, exists_user, request)
 
-        # TODO: Add role to JWT
-        jwt_payload = JWTPayload(user_id=exists_user.id).model_dump(mode="json")
+        jwt_payload = JWTPayload(
+            user_id=exists_user.id, roles=[role.id for role in exists_user.roles]
+        ).model_dump(mode="json")
         tokens = generate_jwt(
             payload=jwt_payload,
             access_jti=exists_user.signature.signature,
@@ -184,7 +186,10 @@ class JWTAuthService(BaseAuthService):
         user = await UserService.get_by_id(db_session, token.user_id)
         await refresh_token_storage.delete(db_session, refresh_token)
 
-        jwt_payload = JWTPayload(user_id=user.id).model_dump(mode="json")
+        jwt_payload = JWTPayload(
+            user_id=user.id, 
+            roles=[role.id for role in user.roles]
+        ).model_dump(mode="json")
         tokens = generate_jwt(
             payload=jwt_payload,
             access_jti=user.signature.signature,
@@ -200,31 +205,19 @@ class JWTAuthService(BaseAuthService):
 
 
     @staticmethod
-    async def _save_login_session_if_not_exists(
+    async def _save_login_session(
         db_session: AsyncSession, user: users_models.User, request: Request
     ):
         """Save user session if not exists. User sessions identifies by ip and user_agent."""
 
         request_ip = request.client.host
         user_agent = request.headers.get("User-Agent")
-
-        statement = select(users_models.UserLogin).filter(
-            and_(
-                users_models.UserLogin.user_id == user.id,
-                users_models.UserLogin.ip == request_ip,
-                users_models.UserLogin.user_agent == user_agent,
-            )
+        user_login = users_models.UserLogin(
+            user_id=user.id, ip=request_ip, user_agent=user_agent, updated_at=datetime.now()
         )
-        result = await db_session.execute(statement)
-        if (exists_login := result.scalar()) is None:
-            exists_login = users_models.UserLogin(
-                user_id=user.id, ip=request_ip, user_agent=user_agent, updated_at=datetime.now()
-            )
-        else:
-            exists_login.updated_at = datetime.now()
 
         user.last_login = datetime.now()
-        db_session.add(exists_login)
+        db_session.add(user_login)
         db_session.add(user)
         try:
             await db_session.commit()

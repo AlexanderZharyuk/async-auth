@@ -1,14 +1,18 @@
 import logging
 from uuid import uuid4
 
-from fastapi import APIRouter, Path, Query, status
+from fastapi import APIRouter, Path, Query, status, Depends
 from pydantic import UUID4
 from typing_extensions import Annotated
 
+from src.v1.dependencies import require_roles
 from src.db.postgres import DatabaseSession
 from src.v1.roles.schemas import SeveralRolesResponse
+from src.v1.roles.constants import RolesChoices
+from src.v1.users.models import User
 from src.v1.users.schemas import UserResponse, UserLoginsResponse, UserUpdate, UserBase, RoleUser, UserHasRole
 from src.v1.users.service import UserService, UserRolesService
+
 
 router = APIRouter(prefix="/users", tags=["Пользователи"])
 logger = logging.getLogger(__name__)
@@ -24,6 +28,7 @@ logger = logging.getLogger(__name__)
 async def get_user(
     db_session: DatabaseSession,
     user_id: Annotated[UUID4, Path(examples=[uuid4()])],
+    current_user: User = Depends(require_roles([RolesChoices.ADMIN]))
 ) -> UserResponse:
     """
     Получение информации о конкретном пользователе.
@@ -43,6 +48,7 @@ async def update_user(
     db_session: DatabaseSession,
     user_id: Annotated[UUID4, Path(examples=[uuid4()])],
     user_change_data: UserUpdate,
+    current_user: User = Depends(require_roles([RolesChoices.ADMIN]))
 ) -> UserResponse:
     """
     Изменение информации о пользователе.
@@ -65,6 +71,7 @@ async def get_user_login_history(
     user_id: Annotated[UUID4, Path(examples=[uuid4()])],
     page: Annotated[int, Query(examples=[1], ge=1)] = 1,
     per_page: Annotated[int, Query(examples=[10], ge=1)] = 10,
+    current_user: User = Depends(require_roles([RolesChoices.ADMIN]))
 ) -> UserLoginsResponse:
     """
     Получение списка последних логинов пользователя.
@@ -82,7 +89,9 @@ async def get_user_login_history(
     description="Получить список ролей пользователя.",
 )
 async def get_roles(
-    db_session: DatabaseSession, user_id: Annotated[UUID4, Path(examples=uuid4())]
+    db_session: DatabaseSession, 
+    user_id: Annotated[UUID4, Path(examples=uuid4())],
+    current_user: User = Depends(require_roles([RolesChoices.ADMIN]))
 ) -> SeveralRolesResponse:
     roles = await UserRolesService.get_roles(session=db_session, user_id=user_id)
     return SeveralRolesResponse(data=roles)
@@ -96,7 +105,9 @@ async def get_roles(
     description="Назначить роль пользователю.",
 )
 async def add_role(
-    db_session: DatabaseSession, role: RoleUser, user_id: Annotated[UUID4, Path(examples=uuid4())]
+    db_session: DatabaseSession, role: RoleUser, 
+    user_id: Annotated[UUID4, Path(examples=uuid4())],
+    current_user: User = Depends(require_roles([RolesChoices.ADMIN]))
 ) -> UserResponse:
     await UserRolesService.add_role(session=db_session, user_id=user_id, data=role)
     return UserResponse(data={})
@@ -112,7 +123,8 @@ async def add_role(
 async def delete_role(
     db_session: DatabaseSession, 
     role_id: Annotated[int, Path(examples=127856)], 
-    user_id: Annotated[UUID4, Path(examples=uuid4())]
+    user_id: Annotated[UUID4, Path(examples=uuid4())],
+    current_user: User = Depends(require_roles([RolesChoices.ADMIN]))
 ) -> UserResponse:
     await UserRolesService.delete_role(session=db_session, user_id=user_id, role_id=role_id)
     return UserResponse(data={})

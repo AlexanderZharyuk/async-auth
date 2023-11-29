@@ -63,3 +63,4 @@ class VerifyTokenResponse(BaseResponseBody):
 
 class JWTPayload(BaseModel):
     user_id: UUID4
+    roles: list[int]
