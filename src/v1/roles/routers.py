@@ -18,9 +18,24 @@ router = APIRouter(prefix="/roles", tags=["Роли"])
     status_code=status.HTTP_200_OK,
     description="Получить список существующих ролей.",
 )
-async def get(db_session: DatabaseSession) -> SeveralRolesResponse:
-    roles = await RoleService.get(session=db_session)
+async def list_roles(db_session: DatabaseSession) -> SeveralRolesResponse:
+    roles = await RoleService.list(session=db_session)
     return SeveralRolesResponse(data=roles)
+
+
+@router.get(
+    "/{role_id}",
+    summary="Получить конкретную роль.",
+    response_model=SingleRoleResponse,
+    status_code=status.HTTP_200_OK,
+    description="Получить конкретную роль.",
+)
+async def get_role(
+        role_id: Annotated[int, Path(example=127856)],
+        db_session: DatabaseSession
+) -> SingleRoleResponse:
+    role = await RoleService.get(session=db_session, role_id=role_id)
+    return SingleRoleResponse(data=role)
 
 
 @router.post(
@@ -30,7 +45,7 @@ async def get(db_session: DatabaseSession) -> SeveralRolesResponse:
     status_code=status.HTTP_201_CREATED,
     description="Создать новую роль.",
 )
-async def create(
+async def create_role(
     role: RoleCreate, 
     db_session: DatabaseSession, 
     current_user: User = Depends(require_roles([RolesChoices.ADMIN]))

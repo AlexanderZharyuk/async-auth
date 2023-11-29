@@ -33,7 +33,8 @@ async def get_user(
     """
     Получение информации о конкретном пользователе.
     """
-    user = await UserService.get_by_id(db_session=db_session, user_id=user_id)
+
+    user = await UserService.get(db_session=db_session, attribute="id", attribute_value=user_id)
     return UserResponse(data=UserBase.model_validate(user))
 
 
@@ -76,7 +77,7 @@ async def get_user_login_history(
     """
     Получение списка последних логинов пользователя.
     """
-    logins = await UserService.get_user_login_history(
+    logins = await UserService.get_login_history(
         db_session=db_session, user_id=user_id, page=page, per_page=per_page
     )
     return UserLoginsResponse(data=logins)

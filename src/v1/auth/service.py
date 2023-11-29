@@ -3,16 +3,20 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from fastapi import Request, Response
+from jose import jwt, JWTError
 from pydantic import BaseModel, UUID4, ValidationError
-from sqlalchemy import and_, or_, select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from jose import jwt, JWTError
 
 from src.core.config import settings
 from src.db.postgres import RefreshTokensStorage
+from src.db.redis import BlacklistSignatureStorage
 from src.v1.auth.exceptions import (
-    UserAlreadyExistsError, UnauthorizedError, TokenNotFoundError, InvalidTokenError
+    UserAlreadyExistsError,
+    UnauthorizedError,
+    TokenNotFoundError,
+    InvalidTokenError,
 )
 from src.v1.auth.helpers import (
     generate_jwt,
@@ -20,15 +24,20 @@ from src.v1.auth.helpers import (
     hash_password,
     verify_password,
     decode_jwt,
-    validate_jwt
+    validate_jwt,
 )
-from src.v1.auth.schemas import (JWTTokens, User, UserCreate, UserLogin, 
-                                 VerifyTokenResponse, JWTPayload)
-from src.db.redis import BlacklistSignatureStorage
+from src.v1.auth.schemas import (
+    JWTTokens,
+    User,
+    UserCreate,
+    UserLogin,
+    VerifyTokenResponse,
+    JWTPayload,
+)
 from src.v1.exceptions import ServiceError
-from src.v1.users.service import UserService
 from src.v1.users import models as users_models
 from src.v1.users.exceptions import UserNotFoundError
+from src.v1.users.service import UserService
 
 
 class BaseAuthService(ABC):
@@ -48,7 +57,7 @@ class BaseAuthService(ABC):
         user = users_models.User(
             id=uuid.uuid4(),
             **user.model_dump(exclude={"password", "repeat_password", "id"}),
-            password=hash_password(user.password)
+            password=hash_password(user.password),
         )
         await user.set_default_role(db_session)
         user_signature = users_models.UserSignature(
@@ -90,7 +99,9 @@ class JWTAuthService(BaseAuthService):
         with access token.
         """
 
-        exists_user = await UserService.get_by_email(db_session, user.email)
+        exists_user = await UserService.get(
+            db_session=db_session, attribute="email", attribute_value=user.email
+        )
         if not verify_password(user.password, exists_user.password):
             raise UserNotFoundError()
 
@@ -111,10 +122,10 @@ class JWTAuthService(BaseAuthService):
 
     @staticmethod
     async def logout(
-        db_session: AsyncSession, 
+        db_session: AsyncSession,
         refresh_token_storage: RefreshTokensStorage,
         response: Response,
-        refresh_token: str
+        refresh_token: str,
     ):
         """Logout user from current session"""
 
@@ -128,7 +139,7 @@ class JWTAuthService(BaseAuthService):
             await validate_jwt(blacklist_signatures_storage, access_token)
             token_payload = decode_jwt(access_token)
             JWTPayload(**token_payload)
-            data={"access": True}
+            data = {"access": True}
         except (UnauthorizedError, ValidationError):
             data = {"access": False}
         return VerifyTokenResponse(data=data)
@@ -139,7 +150,7 @@ class JWTAuthService(BaseAuthService):
         blacklist_signatures_storage: BlacklistSignatureStorage,
         refresh_token_storage: RefreshTokensStorage,
         response: Response,
-        access_token: str
+        access_token: str,
     ):
         """Terminate all sessions"""
 
@@ -149,23 +160,23 @@ class JWTAuthService(BaseAuthService):
             token_payload = decode_jwt(access_token)
         except JWTError:
             raise InvalidTokenError()
-        
+
         token_headers = jwt.get_unverified_header(access_token)
-        
+
         user_id = token_payload.get("user_id")
         old_user_signature = token_headers.get("jti")
 
         await blacklist_signatures_storage.create(user_id, old_user_signature)
-        await __class__._update_user_signature(db_session,  user_id, old_user_signature)
+        await __class__._update_user_signature(db_session, user_id, old_user_signature)
 
         await refresh_token_storage.delete_all(db_session, user_id=user_id)
 
     @staticmethod
     async def refresh_tokens(
-        db_session: AsyncSession, 
+        db_session: AsyncSession,
         refresh_token_storage: RefreshTokensStorage,
         response: Response,
-        refresh_token: str
+        refresh_token: str,
     ):
         """Regenerate JWT pair of tokens"""
 
@@ -173,7 +184,7 @@ class JWTAuthService(BaseAuthService):
             decode_jwt(refresh_token)
         except JWTError:
             raise InvalidTokenError()
-        
+
         refresh_token_headers = jwt.get_unverified_header(refresh_token)
         refresh_jti = refresh_token_headers.get("jti")
         statement = select(users_models.UserRefreshTokens).where(
@@ -183,12 +194,13 @@ class JWTAuthService(BaseAuthService):
         if (token := result.scalar()) is None:
             raise TokenNotFoundError()
 
-        user = await UserService.get_by_id(db_session, token.user_id)
+        user = await UserService.get(
+            db_session=db_session, attribute="id", attribute_value=token.user_id
+        )
         await refresh_token_storage.delete(db_session, refresh_token)
 
         jwt_payload = JWTPayload(
-            user_id=user.id, 
-            roles=[role.id for role in user.roles]
+            user_id=user.id, roles=[role.id for role in user.roles]
         ).model_dump(mode="json")
         tokens = generate_jwt(
             payload=jwt_payload,
@@ -197,12 +209,9 @@ class JWTAuthService(BaseAuthService):
         )
         await refresh_token_storage.create(db_session, tokens.refresh_token, user.id)
         await __class__._set_user_cookie(
-            settings.sessions_cookie_name, 
-            tokens.access_token, 
-            response
+            settings.sessions_cookie_name, tokens.access_token, response
         )
         return tokens
-
 
     @staticmethod
     async def _save_login_session(
@@ -236,22 +245,25 @@ class JWTAuthService(BaseAuthService):
             secure=settings.jwt_access_token_cookie_secure,
             samesite=settings.jwt_access_token_cookie_samesite,
             max_age=settings.jwt_access_expire_time_in_seconds,
-            expires=settings.jwt_access_expire_time_in_seconds
+            expires=settings.jwt_access_expire_time_in_seconds,
         )
 
     @staticmethod
     async def _update_user_signature(
-        db_session: AsyncSession,
-        user_id: UUID4,
-        old_user_signature: str
+        db_session: AsyncSession, user_id: UUID4, old_user_signature: str
     ):
         """Update user signature when user terminate all sessions."""
-        user = await UserService.get_by_id(db_session, user_id)
+
+        user = await UserService.get(
+            db_session=db_session, attribute="id", attribute_value=user_id
+        )
         new_user_signature = generate_user_signature(user.username)
 
-        statement = update(users_models.UserSignature)\
-        .where(users_models.UserSignature.signature == old_user_signature)\
-        .values({users_models.UserSignature.signature: new_user_signature})
+        statement = (
+            update(users_models.UserSignature)
+            .where(users_models.UserSignature.signature == old_user_signature)
+            .values({users_models.UserSignature.signature: new_user_signature})
+        )
         await db_session.execute(statement)
         try:
             await db_session.commit()

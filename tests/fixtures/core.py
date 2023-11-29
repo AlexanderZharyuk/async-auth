@@ -7,6 +7,10 @@ from src.core.config import settings
 from src.db.postgres import db_session
 from src.main import app
 from src.models import Base
+from src.v1.dependencies import require_roles
+from src.v1.roles.constants import RolesChoices
+from src.v1.roles.models import Role
+from src.v1.users.models import User
 
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
@@ -63,9 +67,25 @@ async def db(db_engine):
         yield session
 
 
-@pytest_asyncio.fixture(scope="session", autouse=True)
+@pytest_asyncio.fixture
+def get_required_roles():
+    async def check_user_roles() -> User:
+        super_admin_user_data = {
+            "email": "super@admin.com",
+            "username": "superadmin",
+            "full_name": "superadmin",
+        }
+        user = User(**super_admin_user_data)
+        user.roles = [Role(id=100, name=RolesChoices.ADMIN)]
+        return user
+
+    return check_user_roles
+
+
+@pytest_asyncio.fixture
 async def api_session(db: AsyncSession):
     app.dependency_overrides[db_session] = lambda: db
+    app.dependency_overrides[require_roles] = lambda: get_required_roles
     client = AsyncClient(app=app, base_url="http://api_test")
     yield client
     await client.aclose()
