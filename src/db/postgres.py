@@ -61,9 +61,8 @@ class PostgresRefreshTokenStorage(BaseStorage):
         return refresh_token.token
 
     @staticmethod
-    async def get(db_session: AsyncSession, token: str) -> UserRefreshTokens:
-        # TODO: Make better
-        return await db_session.get(UserRefreshTokens, token)
+    async def get(db_session: AsyncSession, token_id: str) -> UserRefreshTokens:
+        return await db_session.get(UserRefreshTokens, token_id)
 
     @staticmethod
     async def delete(db_session: AsyncSession, token: str):
@@ -75,6 +74,9 @@ class PostgresRefreshTokenStorage(BaseStorage):
         
         token_headers = jwt.get_unverified_header(token)
         token_id = token_headers.get("jti")
+        token_in_db = await __class__.get(db_session, token_id)
+        if not token_in_db:
+            raise InvalidTokenError()
         
         if token_id:
             statement = delete(UserRefreshTokens).where(UserRefreshTokens.token == token_id)
