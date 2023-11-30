@@ -1,7 +1,8 @@
 import logging
-from typing import List, Type
+from abc import ABC, abstractmethod
+from typing import List
 
-from pydantic import UUID4, EmailStr
+from pydantic import UUID4
 from sqlalchemy import select, or_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,27 +24,32 @@ from src.v1.users.schemas import UserBase, UserUpdate, UserLoginSchema, RoleUser
 logger = logging.getLogger(__name__)
 
 
-class UserService:
-    @staticmethod
-    async def get_by_email(db_session: AsyncSession, email: EmailStr) -> Type[User]:
-        statement = select(User).where(User.email == email)
+class BaseUserService(ABC):
+    @abstractmethod
+    async def get(self, *args, **kwargs) -> object:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def update(self, *args, **kwargs) -> object:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_login_history(self, *args, **kwargs) -> object:
+        raise NotImplementedError
+
+
+class DatabaseUserService(BaseUserService):
+    async def get(self, db_session: AsyncSession, attribute: str, attribute_value: str) -> User:
+        statement = select(User).where(getattr(User, attribute) == attribute_value)
         result = await db_session.execute(statement)
         if (exists_user := result.scalar()) is None:
             raise UserNotFoundError()
         return exists_user
 
-    @staticmethod
-    async def get_by_id(db_session: AsyncSession, user_id: UUID4) -> Type[User]:
-        user = await db_session.get(User, user_id)
-        if not user:
-            raise UserNotFoundError()
-        return user
-
-    @staticmethod
     async def update(
-        db_session: AsyncSession, user_id: UUID4, update_data: UserUpdate
+        self, db_session: AsyncSession, user_id: UUID4, update_data: UserUpdate
     ) -> UserBase:
-        user = await __class__.get_by_id(db_session=db_session, user_id=user_id)
+        user = await self.get(db_session=db_session, attribute="id", attribute_value=user_id)
         if not verify_password(update_data.current_password, user.password):
             raise PasswordIncorrectError()
 
@@ -79,13 +85,12 @@ class UserService:
             raise ServiceError
         return UserBase.model_validate(user)
 
-    @staticmethod
-    async def get_user_login_history(
-        db_session: AsyncSession, user_id: UUID4, page: int = 1, per_page: int = 50
+    async def get_login_history(
+        self, db_session: AsyncSession, user_id: UUID4, page: int = 1, per_page: int = 50
     ) -> List[UserLoginSchema]:
         limit = per_page
         offset = (page - 1) * per_page
-        user = await __class__.get_by_id(db_session=db_session, user_id=user_id)
+        user = await self.get(db_session=db_session, attribute="id", attribute_value=user_id)
         logins = await db_session.execute(
             select(UserLogin)
             .where(UserLogin.user_id == user.id)
@@ -96,11 +101,29 @@ class UserService:
         return [UserLoginSchema.model_validate(login) for login in logins.scalars()]
 
 
-class UserRolesService(UserService):
+class BaseUserRolesService(ABC):
+    @abstractmethod
+    async def get_roles(self, *args, **kwargs) -> List:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def add_role(self, *args, **kwargs) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def delete_role(self, *args, **kwargs) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def has_role(self, *args, **kwargs) -> None:
+        raise NotImplementedError
+
+
+class DatabaseUserRolesService(BaseUserRolesService):
     """Managing user roles service depends on PostgreSQL"""
 
     async def get_roles(self, session: AsyncSession, user_id: UUID4) -> List:
-        await UserService.get_by_id(db_session=session, user_id=user_id)
+        await UserService.get(db_session=session, attribute="id", attribute_value=user_id)
         statement = select(Role).join(roles_to_users).filter(roles_to_users.c.user_id == user_id)
         query = await session.execute(statement)
         result = query.scalars().all()
@@ -110,8 +133,10 @@ class UserRolesService(UserService):
         return roles
 
     async def add_role(self, session: AsyncSession, user_id: UUID4, data: RoleUser) -> None:
-        user = await UserService.get_by_id(db_session=session, user_id=user_id)
-        role = await RoleService.get_by_id(session=session, role_id=data.role_id)
+        user = await UserService.get(
+            db_session=session, attribute="id", attribute_value=user_id
+        )
+        role = await RoleService.get(session=session, role_id=data.role_id)
 
         if role in user.roles:
             raise RoleAlreadyAssignedError
@@ -126,8 +151,10 @@ class UserRolesService(UserService):
         return
 
     async def delete_role(self, session: AsyncSession, user_id: UUID4, role_id: int) -> None:
-        user = await UserService.get_by_id(db_session=session, user_id=user_id)
-        role = await RoleService.get_by_id(session=session, role_id=role_id)
+        user = await UserService.get(
+            db_session=session, attribute="id", attribute_value=user_id
+        )
+        role = await RoleService.get(session=session, role_id=role_id)
 
         try:
             user.roles.remove(role)
@@ -142,7 +169,7 @@ class UserRolesService(UserService):
             raise ServiceError
 
     async def has_role(self, session: AsyncSession, user_id: UUID4, role_id: int) -> bool:
-        await UserService.get_by_id(db_session=session, user_id=user_id)
+        await UserService.get(db_session=session, attribute="id", attribute_value=user_id)
         statement = (
             select(Role)
             .join(roles_to_users)
@@ -154,4 +181,5 @@ class UserRolesService(UserService):
         return result is not None
 
 
-UserRolesService = UserRolesService()
+UserService = DatabaseUserService()
+UserRolesService = DatabaseUserRolesService()
