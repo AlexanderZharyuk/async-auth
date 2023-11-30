@@ -13,7 +13,7 @@ from src.models import Base
 async def db_engine():
     pg_dsn = (
         f"postgresql+asyncpg://{settings.postgres_user}:"
-        f"{settings.postgres_pwd}@{settings.postgres_host}:"
+        f"{settings.postgres_password}@{settings.postgres_host}:"
         f"{settings.postgres_port}/"
         f"{settings.postgres_db}_test_db"
     )
@@ -29,7 +29,7 @@ async def db_engine():
 async def create_database():
     pg_dsn = (
         f"postgresql+asyncpg://{settings.postgres_user}:"
-        f"{settings.postgres_pwd}@{settings.postgres_host}:"
+        f"{settings.postgres_password}@{settings.postgres_host}:"
         f"{settings.postgres_port}/postgres"
     )
     engine = create_async_engine(pg_dsn, future=True).execution_options(
@@ -44,7 +44,7 @@ async def create_database():
 async def delete_database():
     pg_dsn = (
         f"postgresql+asyncpg://{settings.postgres_user}:"
-        f"{settings.postgres_pwd}@{settings.postgres_host}:"
+        f"{settings.postgres_password}@{settings.postgres_host}:"
         f"{settings.postgres_port}/postgres"
     )
     engine = create_async_engine(pg_dsn, future=True).execution_options(

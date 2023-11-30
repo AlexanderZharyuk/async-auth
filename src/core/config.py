@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     postgres_db: str = "auth_db"
     postgres_user: str = "app"
-    postgres_pwd: str = "123qwe"
+    postgres_password: str = "123qwe"
 
     jwt_secret_key: str = "50ae6b6f23a914d61c65b7bf6124107d73b47e0303c4da828c06092d1a18b056"
     jwt_algorithm: str = "HS256"
@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     def pg_dsn(self):
         return (
             f"postgresql+asyncpg://{self.postgres_user}:"
-            f"{self.postgres_pwd}@{self.postgres_host}:"
+            f"{self.postgres_password}@{self.postgres_host}:"
             f"{self.postgres_port}/{self.postgres_db}"
         )
 

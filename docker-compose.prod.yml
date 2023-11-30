@@ -1,4 +1,4 @@
-version: '3'
+version: '3.4'
 
 services:
   db:
@@ -40,6 +40,9 @@ services:
         condition: service_healthy
 
   api:
+    build:
+      context: ./
+      target: prod
     restart: always
     image: auth_api:${TAG:-latest}
     env_file:
