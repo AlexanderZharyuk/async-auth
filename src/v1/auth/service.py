@@ -1,3 +1,4 @@
+import logging
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -39,6 +40,8 @@ from src.v1.users import models as users_models
 from src.v1.users.exceptions import UserNotFoundError
 from src.v1.users.service import UserService
 
+logger = logging.getLogger(__name__)
+
 
 class BaseAuthService(ABC):
     """Basic Auth Service class for implementation different auth strategies"""
@@ -68,7 +71,8 @@ class BaseAuthService(ABC):
         db_session.add(user_signature)
         try:
             await db_session.commit()
-        except SQLAlchemyError:
+        except SQLAlchemyError as ex:
+            logger.exception(ex)
             await db_session.rollback()
             raise ServiceError()
 
@@ -230,7 +234,8 @@ class JWTAuthService(BaseAuthService):
         db_session.add(user)
         try:
             await db_session.commit()
-        except SQLAlchemyError:
+        except SQLAlchemyError as ex:
+            logger.exception(ex)
             await db_session.rollback()
             raise ServiceError()
 
@@ -267,7 +272,8 @@ class JWTAuthService(BaseAuthService):
         await db_session.execute(statement)
         try:
             await db_session.commit()
-        except SQLAlchemyError:
+        except SQLAlchemyError as ex:
+            logger.exception(ex)
             await db_session.rollback()
             raise ServiceError()
 

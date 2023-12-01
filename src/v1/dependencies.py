@@ -25,6 +25,8 @@ def require_roles(allowed_roles: list[str]):
     """Check user roles for route"""
 
     async def check_user_roles(user: User = Depends(get_current_user)) -> User:
+        if user.is_superuser:
+            return user
         user_roles = set([role.name for role in user.roles])
         if set(allowed_roles).intersection(user_roles):
             return user
