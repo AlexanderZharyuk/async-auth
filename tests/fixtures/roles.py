@@ -11,6 +11,7 @@ data = [
     {"id": 96614, "name": "User"},
     {"id": 96616, "name": "Owner"},
     {"id": 96618, "name": "DevOps"},
+    {"id": 200, "name": "default_user"},
 ]
 data_id = [i.get("id") for i in data[2:]]
 data_name = [n.get("name") for n in data[2:]]

@@ -142,6 +142,7 @@ async def test_access_verify_complete(api_session: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_access_verify_failed(api_session: AsyncClient):
+    api_session.cookies.clear()
     exists_user_data = {"email": "some@example.com", "password": "somepass"}
     response = await api_session.post("/api/v1/auth/signin", json=exists_user_data)
     refresh_token = TokensResponse(**response.json()).data.refresh_token
@@ -207,7 +208,8 @@ async def test_success_logout(api_session: AsyncClient, db: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_failed_logout(api_session: AsyncClient, db: AsyncSession):
+async def test_failed_logout(api_session: AsyncClient):
+    api_session.cookies.clear()
     response = await api_session.post("/api/v1/auth/logout")
     assert response.status_code == HTTPStatus.FORBIDDEN
 

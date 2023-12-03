@@ -1,3 +1,5 @@
+import uuid
+
 import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy import text
@@ -7,35 +9,21 @@ from src.core.config import settings
 from src.db.postgres import db_session
 from src.main import app
 from src.models import Base
-from src.v1.dependencies import require_roles
-from src.v1.roles.constants import RolesChoices
-from src.v1.roles.models import Role
+from src.v1.auth.helpers import (
+    generate_jwt,
+    hash_password,
+)
 from src.v1.users.models import User
 
-
-@pytest_asyncio.fixture(scope="session", autouse=True)
-async def db_engine():
-    pg_dsn = (
-        f"postgresql+asyncpg://{settings.postgres_user}:"
-        f"{settings.postgres_password}@{settings.postgres_host}:"
-        f"{settings.postgres_port}/"
-        f"{settings.postgres_db}_test_db"
-    )
-    await create_database()
-    engine = create_async_engine(pg_dsn, future=True)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        yield conn
-    await engine.dispose()
-    await delete_database()
+pg_connect_string = (
+    f"postgresql+asyncpg://{settings.postgres_user}:"
+    f"{settings.postgres_password}@{settings.postgres_host}:"
+    f"{settings.postgres_port}/"
+)
 
 
 async def create_database():
-    pg_dsn = (
-        f"postgresql+asyncpg://{settings.postgres_user}:"
-        f"{settings.postgres_password}@{settings.postgres_host}:"
-        f"{settings.postgres_port}/postgres"
-    )
+    pg_dsn = f"{pg_connect_string}postgres"
     engine = create_async_engine(pg_dsn, future=True).execution_options(
         isolation_level="AUTOCOMMIT"
     )
@@ -46,46 +34,66 @@ async def create_database():
 
 
 async def delete_database():
-    pg_dsn = (
-        f"postgresql+asyncpg://{settings.postgres_user}:"
-        f"{settings.postgres_password}@{settings.postgres_host}:"
-        f"{settings.postgres_port}/postgres"
-    )
+    pg_dsn = f"{pg_connect_string}postgres"
     engine = create_async_engine(pg_dsn, future=True).execution_options(
         isolation_level="AUTOCOMMIT"
     )
     async with engine.connect() as c:
         async with c.begin():
-            await c.execute(text(f"DROP DATABASE {settings.postgres_db}_test_db;"))
+            await c.execute(text(f"DROP DATABASE IF EXISTS {settings.postgres_db}_test_db;"))
     await engine.dispose()
 
 
-@pytest_asyncio.fixture(scope="session", autouse=True)
+@pytest_asyncio.fixture(scope="session")
+async def db_engine():
+    pg_dsn = f"{pg_connect_string}{settings.postgres_db}_test_db"
+    await delete_database()
+    await create_database()
+    engine = create_async_engine(pg_dsn, future=True)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+        yield conn
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture(scope="session")
 async def db(db_engine):
     async_session = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
     async with async_session() as session:
         yield session
 
 
-@pytest_asyncio.fixture
-def get_required_roles():
-    async def check_user_roles() -> User:
-        super_admin_user_data = {
-            "email": "super@admin.com",
+@pytest_asyncio.fixture(scope="session")
+async def super_admin_access_token(db):
+    user = User(
+        **{
+            "id": str(uuid.uuid4()),
             "username": "superadmin",
+            "email": "super@admin.com",
             "full_name": "superadmin",
+            "is_superuser": True,
+            "password": hash_password("superadmin_password"),
         }
-        user = User(**super_admin_user_data)
-        user.roles = [Role(id=100, name=RolesChoices.ADMIN)]
-        return user
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
 
-    return check_user_roles
+    tokens = generate_jwt(
+        payload={"user_id": str(user.id), "roles": []},
+        access_jti=str(uuid.uuid4()),
+        refresh_jti=uuid.uuid4(),
+    ).model_dump(mode="json")
+    yield tokens["access_token"]
 
 
 @pytest_asyncio.fixture
-async def api_session(db: AsyncSession):
+async def api_session(db: AsyncSession, super_admin_access_token: str):
     app.dependency_overrides[db_session] = lambda: db
-    app.dependency_overrides[require_roles] = lambda: get_required_roles
-    client = AsyncClient(app=app, base_url="http://api_test")
+    client = AsyncClient(
+        app=app,
+        cookies={"access_token": super_admin_access_token},
+        base_url="http://api_test"
+    )
     yield client
     await client.aclose()
